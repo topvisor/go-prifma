@@ -11,7 +11,7 @@ import (
 
 func main() {
 	filename := "test.json"
-	testJson := map[string]interface{} {
+	testJson := map[string]interface{}{
 		"listenPort": 32199,
 		"listenType": "http",
 	}
@@ -21,7 +21,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	err = ioutil.WriteFile(filename, jsonData, os.ModeTemporary)
+	err = ioutil.WriteFile(filename, jsonData, 0664)
 	if err != nil {
 		log.Fatal(err)
 	}
