@@ -61,7 +61,9 @@ func (t *Handler) serveTunnel(rw http.ResponseWriter, req *http.Request) {
 
 	clientConn, _, err := rw.(http.Hijacker).Hijack()
 	if err != nil {
+		_ = destConn.Close()
 		http.Error(rw, err.Error(), http.StatusServiceUnavailable)
+		return
 	}
 
 	go transfer(clientConn, destConn)
