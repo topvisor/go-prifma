@@ -1,8 +1,8 @@
 package main
 
 import (
-	"../../proxy"
 	"encoding/json"
+	"github.com/topvisor/proxy"
 	"io/ioutil"
 	"log"
 	"net/http"
