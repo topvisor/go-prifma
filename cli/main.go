@@ -12,7 +12,7 @@ import (
 func main() {
 	filename := "test.json"
 	testJson := map[string]interface{}{
-		"listenPort": 32199,
+		"listenPort": 31299,
 		"listenType": "http",
 	}
 

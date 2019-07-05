@@ -52,6 +52,7 @@ func (t *Handler) serveTunnel(rw http.ResponseWriter, req *http.Request) {
 	if destConn == nil {
 		var err error
 		if destConn, err = connectToHost(req.Host); err != nil {
+			log.Println(err.Error())
 			http.Error(rw, err.Error(), http.StatusServiceUnavailable)
 			return
 		}
