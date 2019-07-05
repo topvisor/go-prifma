@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"log"
 	"net"
 	"net/http"
 	"net/http/httputil"
@@ -52,7 +51,7 @@ func (t *Handler) serveTunnel(rw http.ResponseWriter, req *http.Request) {
 	if destConn == nil {
 		var err error
 		if destConn, err = connectToHost(req.Host); err != nil {
-			log.Println(err.Error())
+			fmt.Println(err.Error())
 			http.Error(rw, err.Error(), http.StatusServiceUnavailable)
 			return
 		}
@@ -63,7 +62,7 @@ func (t *Handler) serveTunnel(rw http.ResponseWriter, req *http.Request) {
 	clientConn, _, err := rw.(http.Hijacker).Hijack()
 	if err != nil {
 		_ = destConn.Close()
-		log.Println(err.Error())
+		fmt.Println(err.Error())
 		http.Error(rw, err.Error(), http.StatusServiceUnavailable)
 		return
 	}
@@ -73,7 +72,7 @@ func (t *Handler) serveTunnel(rw http.ResponseWriter, req *http.Request) {
 }
 
 func (t *Handler) director(req *http.Request) {
-	log.Print(req)
+	fmt.Print(req)
 }
 
 func (t *Handler) connectToProxy(req *http.Request, proxyUrl *url.URL) (net.Conn, error) {
