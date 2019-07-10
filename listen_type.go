@@ -1,4 +1,4 @@
-package proxy
+package proxyserver
 
 import (
 	"encoding/json"
@@ -43,7 +43,7 @@ func (t *ListenType) UnmarshalJSON(data []byte) error {
 	default:
 		return &json.UnmarshalTypeError{
 			Value: "string",
-			Type: reflect.TypeOf(*t),
+			Type:  reflect.TypeOf(*t),
 		}
 
 	}

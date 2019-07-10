@@ -1,4 +1,4 @@
-package proxy
+package proxyserver
 
 type Filter struct {
 	Proxy   *Proxy `json:"proxy,omitempty"`

@@ -1,4 +1,4 @@
-package proxy
+package proxyserver
 
 import (
 	"encoding/json"
@@ -10,14 +10,14 @@ import (
 
 func TestNew(t *testing.T) {
 	filename := "test.json"
-	testJson := map[string]interface{} {
+	testJson := map[string]interface{}{
 		"listenPort": 9999,
 		"listenType": "http",
-		"filters": []interface{} {
-			map[string]interface{} {
-				"proxy": map[string]interface{} {
+		"filters": []interface{}{
+			map[string]interface{}{
+				"proxy": map[string]interface{}{
 					"url": "http://example.com:3128",
-					"connectHeaders": map[string]interface{} {
+					"connectHeaders": map[string]interface{}{
 						"Proxy-Connection": "keep-alive",
 					},
 				},
