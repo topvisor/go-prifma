@@ -2,7 +2,6 @@ package proxy
 
 import (
 	"errors"
-	"github.com/abbot/go-http-auth"
 	"net"
 	"os"
 )
@@ -14,12 +13,10 @@ const (
 	AuthTypeBasic
 )
 
-func AuthTypeFromString(authTypeStr *string) (authType, error) {
-	if authTypeStr == nil {
+func AuthTypeFromString(authTypeStr string) (authType, error) {
+	switch authTypeStr {
+	case "none":
 		return AuthTypeNone, nil
-	}
-
-	switch *authTypeStr {
 	case "basic":
 		return AuthTypeBasic, nil
 	default:
@@ -31,10 +28,10 @@ type Handler struct {
 	AccessLogger         Logger
 	ErrorLogger          Logger
 	AuthType             authType
-	Htpasswd             auth.BasicAuth
-	HtpasswdForRedirects auth.BasicAuth
-	UseIpV4              *net.IP
-	UseIpV6              *net.IP
+	Htpasswd             *BasicAuth
+	HtpasswdForRedirects *BasicAuth
+	UseIpV4              net.IP
+	UseIpV6              net.IP
 	EnableUseIpHeader    bool
 	BlockRequests        bool
 	RedirectToProxy      *Proxy
@@ -58,26 +55,46 @@ func (t *Handler) Close() error {
 func (t *Handler) setFromConfig(config ConfigHandler) error {
 	var err error
 
-	if err = t.AccessLogger.Close(); err != nil {
-		return err
-	}
 	if config.AccessLog != nil {
 		if err = t.AccessLogger.SetFile(*config.AccessLog); err != nil {
 			return err
 		}
-	}
-
-	if err = t.ErrorLogger.Close(); err != nil {
-		return err
 	}
 	if config.ErrorLog != nil {
 		if err = t.ErrorLogger.SetFile(*config.ErrorLog); err != nil {
 			return err
 		}
 	}
-
-	if t.AuthType, err = AuthTypeFromString(config.AuthType); err != nil {
-		return err
+	if config.AuthType != nil {
+		if t.AuthType, err = AuthTypeFromString(*config.AuthType); err != nil {
+			return err
+		}
+	}
+	if config.Htpasswd != nil {
+		if t.Htpasswd, err = NewBasicAuth(*config.Htpasswd); err != nil {
+			return err
+		}
+	}
+	if config.HtpasswdForRedirects != nil {
+		if t.HtpasswdForRedirects, err = NewBasicAuth(*config.HtpasswdForRedirects); err != nil {
+			return err
+		}
+	}
+	if config.UseIpV4 != nil {
+		if t.UseIpV4 = net.ParseIP(*config.UseIpV4); t.UseIpV4 == nil {
+			return errors.New("incorrect ipV4 address")
+		}
+	}
+	if config.UseIpV6 != nil {
+		if t.UseIpV6 = net.ParseIP(*config.UseIpV6); t.UseIpV6 == nil {
+			return errors.New("incorrect ipV6 address")
+		}
+	}
+	if config.EnableUseIpHeader != nil {
+		t.EnableUseIpHeader = *config.EnableUseIpHeader
+	}
+	if config.BlockRequests != nil {
+		t.BlockRequests = *config.BlockRequests
 	}
 
 	return nil

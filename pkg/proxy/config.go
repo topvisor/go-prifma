@@ -22,17 +22,17 @@ type ConfigServer struct {
 }
 
 type ConfigHandler struct {
-	AccessLog            *string            `json:"accessLog,omitempty"`
-	ErrorLog             *string            `json:"errorLog,omitempty"`
-	AuthType             *string            `json:"authType,omitempty"`
-	Htpasswd             *string            `json:"htpasswd,omitempty"`
-	HtpasswdForRedirects *string            `json:"htpasswdForRedirects,omitempty"`
-	UseIpV4              *string            `json:"useIpV4,omitempty"`
-	UseIpV6              *string            `json:"useIpV6,omitempty"`
-	EnableUseIpHeader    bool               `json:"enableUseIpHeader,omitempty"`
-	BlockRequests        bool               `json:"blockRequests,omitempty"`
-	RedirectToProxy      *ConfigProxy       `json:"redirectToProxy,omitempty"`
-	Conditions           *[]ConfigCondition `json:"conditions,omitempty"`
+	AccessLog            *string           `json:"accessLog,omitempty"`
+	ErrorLog             *string           `json:"errorLog,omitempty"`
+	AuthType             *string           `json:"authType,omitempty"`
+	Htpasswd             *string           `json:"htpasswd,omitempty"`
+	HtpasswdForRedirects *string           `json:"htpasswdForRedirects,omitempty"`
+	UseIpV4              *string           `json:"useIpV4,omitempty"`
+	UseIpV6              *string           `json:"useIpV6,omitempty"`
+	EnableUseIpHeader    *bool             `json:"enableUseIpHeader,omitempty"`
+	BlockRequests        *bool             `json:"blockRequests,omitempty"`
+	RedirectToProxy      *ConfigProxy      `json:"redirectToProxy,omitempty"`
+	Conditions           []ConfigCondition `json:"conditions,omitempty"`
 }
 
 type Config struct {

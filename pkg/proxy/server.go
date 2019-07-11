@@ -1,6 +1,7 @@
 package proxy
 
 import (
+	"context"
 	"errors"
 	"net/http"
 )
@@ -63,7 +64,31 @@ func (t *Server) LoadFromConfig(filename string) error {
 	return nil
 }
 
-func (t *Server) ListenAndServe() {
+func (t *Server) ListenAndServe() error {
+	defer func() {
+		_ = t.Handler.Close()
+	}()
+
 	err := t.httpServer.ListenAndServe()
-	t.Handler.ErrorLogger.Fatalln(err)
+	if err != http.ErrServerClosed {
+		t.Handler.ErrorLogger.Println(err)
+	}
+
+	return err
+}
+
+func (t *Server) Close() error {
+	defer func() {
+		_ = t.Handler.Close()
+	}()
+
+	return t.httpServer.Close()
+}
+
+func (t *Server) Shutdown(ctx context.Context) error {
+	defer func() {
+		_ = t.Handler.Close()
+	}()
+
+	return t.httpServer.Shutdown(ctx)
 }
