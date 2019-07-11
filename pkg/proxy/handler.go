@@ -96,6 +96,31 @@ func (t *Handler) setFromConfig(config ConfigHandler) error {
 	if config.BlockRequests != nil {
 		t.BlockRequests = *config.BlockRequests
 	}
+	if config.RedirectToProxy != nil {
+		t.RedirectToProxy = new(Proxy)
+		t.RedirectToProxy.htpasswdForRedirects = t.HtpasswdForRedirects
+		if err = t.RedirectToProxy.setFromConfig(*config.RedirectToProxy); err != nil {
+			return err
+		}
+	}
+	if config.Conditions != nil {
+		t.Conditions = make(map[Condition]Handler)
+		var configCondition ConfigCondition
+		for configCondition = range config.Conditions {
+			condition, err := NewCondition(configCondition.Condition)
+			if err != nil {
+				return err
+			}
+
+			handler := *t
+			err = handler.setFromConfig(configCondition.Handler)
+			if err != nil {
+				return err
+			}
+
+			t.Conditions[*condition] = handler
+		}
+	}
 
 	return nil
 }
