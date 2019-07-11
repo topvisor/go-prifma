@@ -41,12 +41,12 @@ type Config struct {
 }
 
 func ParseConfig(jsonStr string) (*Config, error) {
-	config := Config{}
-	if err := json.Unmarshal([]byte(jsonStr), &config); err != nil {
+	config := new(Config)
+	if err := json.Unmarshal([]byte(jsonStr), config); err != nil {
 		return nil, err
 	}
 
-	return &config, nil
+	return config, nil
 }
 
 func ParseConfigFromFile(filename string) (*Config, error) {
@@ -55,9 +55,9 @@ func ParseConfigFromFile(filename string) (*Config, error) {
 		return nil, err
 	}
 
-	config := Config{}
+	config := new(Config)
 	decoder := json.NewDecoder(file)
-	if err = decoder.Decode(&config); err != nil {
+	if err = decoder.Decode(config); err != nil {
 		return nil, err
 	}
 
@@ -66,5 +66,5 @@ func ParseConfigFromFile(filename string) (*Config, error) {
 		return nil, err
 	}
 
-	return &config, nil
+	return config, nil
 }

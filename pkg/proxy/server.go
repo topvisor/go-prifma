@@ -13,13 +13,12 @@ const (
 	ListenTypeHttp listenType = iota
 )
 
-func ListenTypeFromString(lTypeStr string) (*listenType, error) {
+func ListenTypeFromString(lTypeStr string) (listenType, error) {
 	switch lTypeStr {
 	case "http":
-		ltype := ListenTypeHttp
-		return &ltype, nil
+		return ListenTypeHttp, nil
 	default:
-		return nil, errors.New("unavailable ListenType")
+		return -1, errors.New("unavailable listen type")
 	}
 }
 
@@ -45,9 +44,12 @@ func (t *Server) SetFromConfig(config Config) error {
 	if err = handler.SetFromConfig(config.ConfigHandler); err != nil {
 		return err
 	}
+	if err = t.Handler.Close(); err != nil {
+		return err
+	}
 
 	t.ListenPort = port
-	t.ListenType = *ltype
+	t.ListenType = ltype
 	t.Handler = handler
 
 	return nil
@@ -102,12 +104,12 @@ func (t *Server) WatchForConfig(filename string) error {
 
 func (t *Server) ListenAndServe() {
 	err := t.httpServer.ListenAndServe()
-	t.Handler.logErrorln(err, true)
+	t.Handler.ErrorLogger.Fatalln(err)
 }
 
 func (t *Server) listenFsWatcherErrors() {
 	for err := range t.fsWatcher.Errors {
-		t.Handler.logErrorln(err, false)
+		t.Handler.ErrorLogger.Println(err)
 	}
 }
 
@@ -115,7 +117,7 @@ func (t *Server) listenFsWatcherEvents() {
 	for event := range t.fsWatcher.Events {
 		if event.Name == t.watchedConfigFilename && event.Op == fsnotify.Write {
 			if err := t.LoadFromConfig(event.Name); err != nil {
-				t.Handler.logErrorln(err, false)
+				t.Handler.ErrorLogger.Println(err)
 			}
 		}
 	}

@@ -1,40 +1,84 @@
 package proxy
 
 import (
-	"log"
+	"errors"
+	"github.com/abbot/go-http-auth"
+	"net"
 	"os"
 )
 
 type authType int
 
 const (
-	AuthTypeBasic authType = iota
+	AuthTypeNone authType = iota
+	AuthTypeBasic
 )
 
+func AuthTypeFromString(authTypeStr *string) (authType, error) {
+	if authTypeStr == nil {
+		return AuthTypeNone, nil
+	}
+
+	switch *authTypeStr {
+	case "basic":
+		return AuthTypeBasic, nil
+	default:
+		return -1, errors.New("unavailable auth type")
+	}
+}
+
 type Handler struct {
-	AccessLog            *log.Logger
-	ErrorLog             *log.Logger
+	AccessLogger         Logger
+	ErrorLogger          Logger
 	AuthType             authType
-	Htpasswd             *string
-	HtpasswdForRedirects *string
+	Htpasswd             *auth.BasicAuth
+	HtpasswdForRedirects *auth.BasicAuth
+	UseIpV4              *net.IP
+	UseIpV6              *net.IP
+	EnableUseIpHeader    bool
+	BlockRequests        bool
+	RedirectToProxy      *Proxy
+	Conditions           map[Condition]Handler
+
+	accessLoggerFile *os.File
+	errorLoggerFile  *os.File
 }
 
 func (t *Handler) SetFromConfig(config ConfigHandler) error {
+	var err error
+
+	if err = t.AccessLogger.Close(); err != nil {
+		return err
+	}
+	if config.AccessLog != nil {
+		if err = t.AccessLogger.SetFile(*config.AccessLog); err != nil {
+			return err
+		}
+	}
+
+	if err = t.ErrorLogger.Close(); err != nil {
+		return err
+	}
+	if config.ErrorLog != nil {
+		if err = t.ErrorLogger.SetFile(*config.ErrorLog); err != nil {
+			return err
+		}
+	}
+
+	if t.AuthType, err = AuthTypeFromString(config.AuthType); err != nil {
+		return err
+	}
 
 	return nil
 }
 
-func (t *Handler) logErrorln(err error, isFatal bool) {
-	if t.ErrorLog != nil {
-		t.ErrorLog.Println(err)
+func (t *Handler) Close() error {
+	if err := t.AccessLogger.Close(); err != nil {
+		return err
 	}
-	if isFatal {
-		os.Exit(1)
+	if err := t.ErrorLogger.Close(); err != nil {
+		return err
 	}
-}
 
-func (t *Handler) logAccessln(access string) {
-	if t.AccessLog != nil {
-		t.AccessLog.Println(access)
-	}
+	return nil
 }
