@@ -1,4 +1,4 @@
-package proxyserver
+package proxy
 
 import (
 	"encoding/json"
@@ -13,14 +13,14 @@ var configMap = map[string]interface{}{
 	"accessLog": "/path/to/access.log",
 }
 
-func TestNewConfig(t *testing.T) {
+func TestParseConfig(t *testing.T) {
 	jsonData, err := json.Marshal(configMap)
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	jsonStr := string(jsonData)
-	config, err := NewConfig(&jsonStr)
+	config, err := ParseConfig(jsonStr)
 	if err != nil {
 		t.Fatal(err.Error())
 	}

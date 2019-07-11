@@ -1,4 +1,4 @@
-package proxyserver
+package go_proxy_server
 
 //import (
 //	"encoding/json"

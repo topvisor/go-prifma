@@ -1,12 +1,13 @@
-package proxyserver
+package go_proxy_server
 
 import (
+	"go-proxy-server/pkg/proxyserver"
 	"net/http"
 )
 
 type ReqFilter http.Server
 
-func New(config *Config) *ReqFilter {
+func New(config *proxy.Config) *ReqFilter {
 	var reqfilter ReqFilter
 
 	//reqfilter.Addr = fmt.Sprintf(":%d", config.ListenPort)
