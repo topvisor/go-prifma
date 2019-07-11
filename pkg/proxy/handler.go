@@ -31,8 +31,8 @@ type Handler struct {
 	AccessLogger         Logger
 	ErrorLogger          Logger
 	AuthType             authType
-	Htpasswd             *auth.BasicAuth
-	HtpasswdForRedirects *auth.BasicAuth
+	Htpasswd             auth.BasicAuth
+	HtpasswdForRedirects auth.BasicAuth
 	UseIpV4              *net.IP
 	UseIpV6              *net.IP
 	EnableUseIpHeader    bool
@@ -44,7 +44,18 @@ type Handler struct {
 	errorLoggerFile  *os.File
 }
 
-func (t *Handler) SetFromConfig(config ConfigHandler) error {
+func (t *Handler) Close() error {
+	if err := t.AccessLogger.Close(); err != nil {
+		return err
+	}
+	if err := t.ErrorLogger.Close(); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (t *Handler) setFromConfig(config ConfigHandler) error {
 	var err error
 
 	if err = t.AccessLogger.Close(); err != nil {
@@ -66,17 +77,6 @@ func (t *Handler) SetFromConfig(config ConfigHandler) error {
 	}
 
 	if t.AuthType, err = AuthTypeFromString(config.AuthType); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (t *Handler) Close() error {
-	if err := t.AccessLogger.Close(); err != nil {
-		return err
-	}
-	if err := t.ErrorLogger.Close(); err != nil {
 		return err
 	}
 
