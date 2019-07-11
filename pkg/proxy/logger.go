@@ -50,7 +50,7 @@ func (t *Logger) Close() error {
 
 func (t *Logger) Println(v ...interface{}) {
 	if t.logger != nil {
-		t.logger.Println(v)
+		t.logger.Println(v...)
 	}
 }
 
