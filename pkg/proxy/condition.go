@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"net"
+	"regexp"
 	"strings"
 )
 
@@ -76,6 +77,10 @@ func (t *Condition) getTester() (condition, error) {
 			if t.tester, err = parseConditionCIDRFromString(t.Value); err != nil {
 				return nil, err
 			}
+		case ConditionTypeDstDomainRegexp:
+			if t.tester, err = parseConditionRegexpFromString(t.Value); err != nil {
+				return nil, err
+			}
 		default:
 			return nil, errors.New("unavailable condition type")
 		}
@@ -84,9 +89,7 @@ func (t *Condition) getTester() (condition, error) {
 	return t.tester, nil
 }
 
-type conditionCIDR struct {
-	ipNet *net.IPNet
-}
+type conditionCIDR net.IPNet
 
 func parseConditionCIDRFromString(conditionCIDSStr string) (*conditionCIDR, error) {
 	_, ipNet, err := net.ParseCIDR(conditionCIDSStr)
@@ -94,7 +97,7 @@ func parseConditionCIDRFromString(conditionCIDSStr string) (*conditionCIDR, erro
 		return nil, err
 	}
 
-	return &conditionCIDR{ipNet}, err
+	return (*conditionCIDR)(ipNet), err
 }
 
 func (t *conditionCIDR) Test(ipStr string) bool {
@@ -103,5 +106,22 @@ func (t *conditionCIDR) Test(ipStr string) bool {
 		return false
 	}
 
-	return t.ipNet.Contains(ip)
+	return (*net.IPNet)(t).Contains(ip)
+}
+
+type conditionRegexp struct {
+	regexp *regexp.Regexp
+}
+
+func parseConditionRegexpFromString(conditionRegexpStr string) (*conditionRegexp, error) {
+	compiledRegexp, err := regexp.Compile(conditionRegexpStr)
+	if err != nil {
+		return nil, err
+	}
+
+	return &conditionRegexp{compiledRegexp}, err
+}
+
+func (t *conditionRegexp) Test(str string) bool {
+	return t.regexp.MatchString(str)
 }
