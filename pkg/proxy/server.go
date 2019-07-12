@@ -85,10 +85,16 @@ func (t *Server) ListenAndServe() error {
 
 	switch t.ListenType {
 	case ListenTypeHttp:
-		t.httpServer.Addr = fmt.Sprintf(":%d", t.ListenPort)
+		ipStr := ""
+		if t.ListenIp != nil {
+			ipStr = t.ListenIp.String()
+		}
+
+		t.httpServer.Addr = fmt.Sprintf("%s:%d", ipStr, t.ListenPort)
 		if err = t.httpServer.ListenAndServe(); err != http.ErrServerClosed {
 			t.Handler.ErrorLogger.Println(err)
 		}
+
 	default:
 		err = errors.New(fmt.Sprintf("unavailable listen type: \"%v\"", t.ListenType))
 	}
