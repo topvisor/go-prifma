@@ -48,8 +48,12 @@ func (t *Logger) Close() error {
 	return nil
 }
 
+func (t *Logger) IsInited() bool {
+	return t.logger != nil
+}
+
 func (t *Logger) Println(v ...interface{}) {
-	if t.logger != nil {
+	if t.IsInited() {
 		t.logger.Println(v...)
 	}
 }

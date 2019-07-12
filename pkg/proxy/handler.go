@@ -3,7 +3,6 @@ package proxy
 import (
 	"errors"
 	"net"
-	"os"
 )
 
 type authType int
@@ -27,18 +26,16 @@ func AuthTypeFromString(authTypeStr string) (authType, error) {
 type Handler struct {
 	AccessLogger         Logger
 	ErrorLogger          Logger
-	AuthType             authType
+	AuthType             *authType
 	Htpasswd             *BasicAuth
 	HtpasswdForRedirects *BasicAuth
 	UseIpV4              net.IP
 	UseIpV6              net.IP
-	EnableUseIpHeader    bool
-	BlockRequests        bool
+	EnableUseIpHeader    *bool
+	BlockRequests        *bool
 	RedirectToProxy      *Proxy
-	Conditions           map[Condition]Handler
 
-	accessLoggerFile *os.File
-	errorLoggerFile  *os.File
+	conditions map[Condition]Handler
 }
 
 func (t *Handler) Close() error {
@@ -47,6 +44,57 @@ func (t *Handler) Close() error {
 	}
 	if err := t.ErrorLogger.Close(); err != nil {
 		return err
+	}
+
+	for _, handler := range t.conditions {
+		if err := handler.Close(); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (t *Handler) SetConditionHandler(cond Condition, handler Handler) error {
+	if t.conditions == nil {
+		t.conditions = make(map[Condition]Handler)
+	}
+
+	if oldHandler, exists := t.conditions[cond]; exists {
+		if err := oldHandler.Close(); err != nil {
+			return err
+		}
+	}
+
+	if !handler.AccessLogger.IsInited() {
+		handler.AccessLogger = t.AccessLogger
+	}
+	if !handler.ErrorLogger.IsInited() {
+		handler.ErrorLogger = t.ErrorLogger
+	}
+	if handler.AuthType == nil {
+		handler.AuthType = t.AuthType
+	}
+	if handler.Htpasswd == nil {
+		handler.Htpasswd = t.Htpasswd
+	}
+	if handler.HtpasswdForRedirects == nil {
+		handler.HtpasswdForRedirects = t.HtpasswdForRedirects
+	}
+	if handler.UseIpV4 == nil {
+		handler.UseIpV4 = t.UseIpV4
+	}
+	if handler.UseIpV6 == nil {
+		handler.UseIpV6 = t.UseIpV6
+	}
+	if handler.EnableUseIpHeader == nil {
+		handler.EnableUseIpHeader = t.EnableUseIpHeader
+	}
+	if handler.BlockRequests == nil {
+		handler.BlockRequests = t.BlockRequests
+	}
+	if handler.RedirectToProxy == nil {
+		handler.RedirectToProxy = t.RedirectToProxy
 	}
 
 	return nil
@@ -66,9 +114,12 @@ func (t *Handler) setFromConfig(config ConfigHandler) error {
 		}
 	}
 	if config.AuthType != nil {
-		if t.AuthType, err = AuthTypeFromString(*config.AuthType); err != nil {
+		authType, err := AuthTypeFromString(*config.AuthType)
+		if err != nil {
 			return err
 		}
+
+		t.AuthType = &authType
 	}
 	if config.Htpasswd != nil {
 		if t.Htpasswd, err = NewBasicAuth(*config.Htpasswd); err != nil {
@@ -90,12 +141,10 @@ func (t *Handler) setFromConfig(config ConfigHandler) error {
 			return errors.New("incorrect ipV6 address")
 		}
 	}
-	if config.EnableUseIpHeader != nil {
-		t.EnableUseIpHeader = *config.EnableUseIpHeader
-	}
-	if config.BlockRequests != nil {
-		t.BlockRequests = *config.BlockRequests
-	}
+
+	t.EnableUseIpHeader = config.EnableUseIpHeader
+	t.BlockRequests = config.BlockRequests
+
 	if config.RedirectToProxy != nil {
 		t.RedirectToProxy = new(Proxy)
 		t.RedirectToProxy.htpasswdForRedirects = t.HtpasswdForRedirects
@@ -104,21 +153,20 @@ func (t *Handler) setFromConfig(config ConfigHandler) error {
 		}
 	}
 	if config.Conditions != nil {
-		t.Conditions = make(map[Condition]Handler)
-		var configCondition ConfigCondition
-		for configCondition = range config.Conditions {
+		for _, configCondition := range config.Conditions {
 			condition, err := NewCondition(configCondition.Condition)
 			if err != nil {
 				return err
 			}
 
-			handler := *t
-			err = handler.setFromConfig(configCondition.Handler)
-			if err != nil {
+			handler := Handler{}
+			if err = handler.setFromConfig(configCondition.Handler); err != nil {
 				return err
 			}
 
-			t.Conditions[*condition] = handler
+			if err = t.SetConditionHandler(*condition, handler); err != nil {
+				return nil
+			}
 		}
 	}
 
