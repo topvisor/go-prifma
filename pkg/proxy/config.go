@@ -6,9 +6,9 @@ import (
 )
 
 type ConfigProxy struct {
-	Url       string            `json:"url"`
-	BasicAuth *string           `json:"basicAuth,omitempty"`
-	Headers   map[string]string `json:"headers,omitempty"`
+	Url          string            `json:"url"`
+	Htpasswd     *string           `json:"htpasswd,omitempty"`
+	ProxyHeaders map[string]string `json:"proxyHeaders,omitempty"`
 }
 
 type ConfigCondition struct {
@@ -22,17 +22,16 @@ type ConfigServer struct {
 }
 
 type ConfigHandler struct {
-	AccessLog            *string           `json:"accessLog,omitempty"`
-	ErrorLog             *string           `json:"errorLog,omitempty"`
-	AuthType             *string           `json:"authType,omitempty"`
-	Htpasswd             *string           `json:"htpasswd,omitempty"`
-	HtpasswdForRedirects *string           `json:"htpasswdForRedirects,omitempty"`
-	UseIpV4              *string           `json:"useIpV4,omitempty"`
-	UseIpV6              *string           `json:"useIpV6,omitempty"`
-	EnableUseIpHeader    *bool             `json:"enableUseIpHeader,omitempty"`
-	BlockRequests        *bool             `json:"blockRequests,omitempty"`
-	RedirectToProxy      *ConfigProxy      `json:"redirectToProxy,omitempty"`
-	Conditions           []ConfigCondition `json:"conditions,omitempty"`
+	AccessLog         *string           `json:"accessLog,omitempty"`
+	ErrorLog          *string           `json:"errorLog,omitempty"`
+	Htpasswd          *string           `json:"htpasswd,omitempty"`
+	EnableBasicAuth   *bool             `json:"enableBasicAuth,omitempty"`
+	OutgoingIpV4      *string           `json:"outgoingIpV4,omitempty"`
+	OutgoingIpV6      *string           `json:"outgoingIpV6,omitempty"`
+	EnableUseIpHeader *bool             `json:"enableUseIpHeader,omitempty"`
+	BlockRequests     *bool             `json:"blockRequests,omitempty"`
+	Proxy             *ConfigProxy      `json:"redirectToProxy,omitempty"`
+	Conditions        []ConfigCondition `json:"conditions,omitempty"`
 }
 
 type Config struct {

@@ -5,35 +5,16 @@ import (
 	"net"
 )
 
-type authType int
-
-const (
-	AuthTypeNone authType = iota
-	AuthTypeBasic
-)
-
-func AuthTypeFromString(authTypeStr string) (authType, error) {
-	switch authTypeStr {
-	case "none":
-		return AuthTypeNone, nil
-	case "basic":
-		return AuthTypeBasic, nil
-	default:
-		return -1, errors.New("unavailable auth type")
-	}
-}
-
 type Handler struct {
-	AccessLogger         Logger
-	ErrorLogger          Logger
-	AuthType             *authType
-	Htpasswd             *BasicAuth
-	HtpasswdForRedirects *BasicAuth
-	UseIpV4              net.IP
-	UseIpV6              net.IP
-	EnableUseIpHeader    *bool
-	BlockRequests        *bool
-	RedirectToProxy      *Proxy
+	AccessLogger      Logger
+	ErrorLogger       Logger
+	Htpasswd          *BasicAuth
+	EnableBasicAuth   *bool
+	OutgoingIpV4      net.IP
+	OutgoingIpV6      net.IP
+	EnableUseIpHeader *bool
+	BlockRequests     *bool
+	Proxy             *Proxy
 
 	conditions map[Condition]Handler
 }
@@ -72,20 +53,17 @@ func (t *Handler) SetConditionHandler(cond Condition, handler Handler) error {
 	if !handler.ErrorLogger.IsInited() {
 		handler.ErrorLogger = t.ErrorLogger
 	}
-	if handler.AuthType == nil {
-		handler.AuthType = t.AuthType
-	}
 	if handler.Htpasswd == nil {
 		handler.Htpasswd = t.Htpasswd
 	}
-	if handler.HtpasswdForRedirects == nil {
-		handler.HtpasswdForRedirects = t.HtpasswdForRedirects
+	if handler.EnableBasicAuth == nil {
+		handler.EnableBasicAuth = t.EnableBasicAuth
 	}
-	if handler.UseIpV4 == nil {
-		handler.UseIpV4 = t.UseIpV4
+	if handler.OutgoingIpV4 == nil {
+		handler.OutgoingIpV4 = t.OutgoingIpV4
 	}
-	if handler.UseIpV6 == nil {
-		handler.UseIpV6 = t.UseIpV6
+	if handler.OutgoingIpV6 == nil {
+		handler.OutgoingIpV6 = t.OutgoingIpV6
 	}
 	if handler.EnableUseIpHeader == nil {
 		handler.EnableUseIpHeader = t.EnableUseIpHeader
@@ -93,8 +71,8 @@ func (t *Handler) SetConditionHandler(cond Condition, handler Handler) error {
 	if handler.BlockRequests == nil {
 		handler.BlockRequests = t.BlockRequests
 	}
-	if handler.RedirectToProxy == nil {
-		handler.RedirectToProxy = t.RedirectToProxy
+	if handler.Proxy == nil {
+		handler.Proxy = t.Proxy
 	}
 
 	return nil
@@ -113,31 +91,21 @@ func (t *Handler) setFromConfig(config ConfigHandler) error {
 			return err
 		}
 	}
-	if config.AuthType != nil {
-		authType, err := AuthTypeFromString(*config.AuthType)
-		if err != nil {
-			return err
-		}
-
-		t.AuthType = &authType
-	}
 	if config.Htpasswd != nil {
 		if t.Htpasswd, err = NewBasicAuth(*config.Htpasswd); err != nil {
 			return err
 		}
 	}
-	if config.HtpasswdForRedirects != nil {
-		if t.HtpasswdForRedirects, err = NewBasicAuth(*config.HtpasswdForRedirects); err != nil {
-			return err
-		}
-	}
-	if config.UseIpV4 != nil {
-		if t.UseIpV4 = net.ParseIP(*config.UseIpV4); t.UseIpV4 == nil {
+
+	t.EnableBasicAuth = config.EnableBasicAuth
+
+	if config.OutgoingIpV4 != nil {
+		if t.OutgoingIpV4 = net.ParseIP(*config.OutgoingIpV4); t.OutgoingIpV4 == nil {
 			return errors.New("incorrect ipV4 address")
 		}
 	}
-	if config.UseIpV6 != nil {
-		if t.UseIpV6 = net.ParseIP(*config.UseIpV6); t.UseIpV6 == nil {
+	if config.OutgoingIpV6 != nil {
+		if t.OutgoingIpV6 = net.ParseIP(*config.OutgoingIpV6); t.OutgoingIpV6 == nil {
 			return errors.New("incorrect ipV6 address")
 		}
 	}
@@ -145,16 +113,15 @@ func (t *Handler) setFromConfig(config ConfigHandler) error {
 	t.EnableUseIpHeader = config.EnableUseIpHeader
 	t.BlockRequests = config.BlockRequests
 
-	if config.RedirectToProxy != nil {
-		t.RedirectToProxy = new(Proxy)
-		t.RedirectToProxy.htpasswdForRedirects = t.HtpasswdForRedirects
-		if err = t.RedirectToProxy.setFromConfig(*config.RedirectToProxy); err != nil {
+	if config.Proxy != nil {
+		t.Proxy = new(Proxy)
+		if err = t.Proxy.setFromConfig(*config.Proxy); err != nil {
 			return err
 		}
 	}
 	if config.Conditions != nil {
 		for _, configCondition := range config.Conditions {
-			condition, err := NewCondition(configCondition.Condition)
+			condition, err := ParseConditionFromString(configCondition.Condition)
 			if err != nil {
 				return err
 			}
