@@ -7,7 +7,6 @@ import (
 
 type ConfigProxy struct {
 	Url          string            `json:"url"`
-	Htpasswd     *string           `json:"htpasswd,omitempty"`
 	ProxyHeaders map[string]string `json:"proxyHeaders,omitempty"`
 }
 
@@ -25,13 +24,14 @@ type ConfigListen struct {
 type ConfigHandler struct {
 	AccessLog         *string           `json:"accessLog,omitempty"`
 	ErrorLog          *string           `json:"errorLog,omitempty"`
+	DialTimeout       *int              `json:"dialTimeout,omitempty"`
 	Htpasswd          *string           `json:"htpasswd,omitempty"`
 	EnableBasicAuth   *bool             `json:"enableBasicAuth,omitempty"`
 	OutgoingIpV4      *string           `json:"outgoingIpV4,omitempty"`
 	OutgoingIpV6      *string           `json:"outgoingIpV6,omitempty"`
 	EnableUseIpHeader *bool             `json:"enableUseIpHeader,omitempty"`
 	BlockRequests     *bool             `json:"blockRequests,omitempty"`
-	Proxy             *ConfigProxy      `json:"redirectToProxy,omitempty"`
+	Proxy             *ConfigProxy      `json:"proxy,omitempty"`
 	Conditions        []ConfigCondition `json:"conditions,omitempty"`
 }
 

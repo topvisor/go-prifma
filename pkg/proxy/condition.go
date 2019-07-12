@@ -1,14 +1,15 @@
 package proxy
 
 import (
-	"errors"
 	"fmt"
+	"golang.org/x/net/idna"
 	"net"
+	"net/http"
 	"regexp"
 	"strings"
 )
 
-type conditionType int
+type conditionType byte
 
 const (
 	ConditionTypeSrcIpCIDR conditionType = iota
@@ -22,12 +23,12 @@ func ConditionTypeFromString(conditionTypeStr string) (conditionType, error) {
 	case "dstDomainRegexp":
 		return ConditionTypeDstDomainRegexp, nil
 	default:
-		return -1, errors.New(fmt.Sprintf("unavailable condition type: \"%s\"", conditionTypeStr))
+		return -1, fmt.Errorf("unavailable condition type: \"%s\"", conditionTypeStr)
 	}
 }
 
 type condition interface {
-	Test(str string) bool
+	Test(req *http.Request) bool
 }
 
 type Condition struct {
@@ -43,7 +44,7 @@ func ParseConditionFromString(conditionStr string) (*Condition, error) {
 
 	conditionStrs := strings.SplitN(conditionStr, ":", 2)
 	if len(conditionStrs) != 2 {
-		return nil, errors.New(fmt.Sprintf("parse condition from string error: \"%s\"", conditionStr))
+		return nil, fmt.Errorf("parse condition from string error: \"%s\"", conditionStr)
 	}
 
 	if condition.Type, err = ConditionTypeFromString(conditionStrs[0]); err != nil {
@@ -59,13 +60,13 @@ func ParseConditionFromString(conditionStr string) (*Condition, error) {
 	return condition, nil
 }
 
-func (t *Condition) Test(str string) bool {
+func (t *Condition) Test(req *http.Request) bool {
 	tester, err := t.getTester()
 	if err != nil {
 		return false
 	}
 
-	return tester.Test(str)
+	return tester.Test(req)
 }
 
 func (t *Condition) getTester() (condition, error) {
@@ -74,15 +75,15 @@ func (t *Condition) getTester() (condition, error) {
 	if t.tester != nil {
 		switch t.Type {
 		case ConditionTypeSrcIpCIDR:
-			if t.tester, err = parseConditionCIDRFromString(t.Value); err != nil {
+			if t.tester, err = parseConditionSrcIpCIDRFromString(t.Value); err != nil {
 				return nil, err
 			}
 		case ConditionTypeDstDomainRegexp:
-			if t.tester, err = parseConditionRegexpFromString(t.Value); err != nil {
+			if t.tester, err = parseConditionDstDomainRegexpFromString(t.Value); err != nil {
 				return nil, err
 			}
 		default:
-			return nil, errors.New(fmt.Sprintf("unavailable condition type: \"%v\"", t.Type))
+			return nil, fmt.Errorf("unavailable condition type: \"%v\"", t.Type)
 		}
 	}
 
@@ -91,7 +92,7 @@ func (t *Condition) getTester() (condition, error) {
 
 type conditionCIDR net.IPNet
 
-func parseConditionCIDRFromString(conditionCIDSStr string) (*conditionCIDR, error) {
+func parseConditionSrcIpCIDRFromString(conditionCIDSStr string) (*conditionCIDR, error) {
 	_, ipNet, err := net.ParseCIDR(conditionCIDSStr)
 	if err != nil {
 		return nil, err
@@ -100,8 +101,8 @@ func parseConditionCIDRFromString(conditionCIDSStr string) (*conditionCIDR, erro
 	return (*conditionCIDR)(ipNet), err
 }
 
-func (t *conditionCIDR) Test(ipStr string) bool {
-	ip := net.ParseIP(ipStr)
+func (t *conditionCIDR) Test(req *http.Request) bool {
+	ip := net.ParseIP(req.RemoteAddr)
 	if ip == nil {
 		return false
 	}
@@ -113,7 +114,7 @@ type conditionRegexp struct {
 	regexp *regexp.Regexp
 }
 
-func parseConditionRegexpFromString(conditionRegexpStr string) (*conditionRegexp, error) {
+func parseConditionDstDomainRegexpFromString(conditionRegexpStr string) (*conditionRegexp, error) {
 	compiledRegexp, err := regexp.Compile(conditionRegexpStr)
 	if err != nil {
 		return nil, err
@@ -122,6 +123,16 @@ func parseConditionRegexpFromString(conditionRegexpStr string) (*conditionRegexp
 	return &conditionRegexp{compiledRegexp}, err
 }
 
-func (t *conditionRegexp) Test(str string) bool {
-	return t.regexp.MatchString(str)
+func (t *conditionRegexp) Test(req *http.Request) bool {
+	host, _, err := net.SplitHostPort(req.Host)
+	if err != nil {
+		return false
+	}
+
+	host, err = idna.ToUnicode(host)
+	if err != nil {
+		return false
+	}
+
+	return t.regexp.MatchString(host)
 }

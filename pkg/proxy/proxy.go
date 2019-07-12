@@ -1,11 +1,20 @@
 package proxy
 
-import "net/url"
+import (
+	"bufio"
+	"bytes"
+	"encoding/base64"
+	"fmt"
+	"io/ioutil"
+	"net"
+	"net/http"
+	"net/url"
+	"time"
+)
 
 type Proxy struct {
-	Url          url.URL
-	Htpasswd     *BasicAuth
-	ProxyHeaders map[string]string
+	Url          *url.URL
+	ProxyHeaders http.Header
 }
 
 func (t *Proxy) setFromConfig(config ConfigProxy) error {
@@ -14,17 +23,64 @@ func (t *Proxy) setFromConfig(config ConfigProxy) error {
 		return err
 	}
 
-	var htpasswd *BasicAuth
-	if config.Htpasswd != nil {
-		htpasswd, err = NewBasicAuth(*config.Htpasswd)
-		if err != nil {
-			return err
+	headers := http.Header{}
+	if config.ProxyHeaders != nil {
+		for key, val := range config.ProxyHeaders {
+			headers.Add(key, val)
 		}
 	}
 
-	t.Url = *parserUrl
-	t.Htpasswd = htpasswd
-	t.ProxyHeaders = config.ProxyHeaders
+	t.Url = parserUrl
+	t.ProxyHeaders = headers
 
 	return nil
+}
+
+func (t *Proxy) connect(req *http.Request, dialTimeout time.Duration) (net.Conn, error) {
+	conn, err := connectToUrl(t.Url, dialTimeout)
+	if err != nil {
+		return nil, err
+	}
+
+	connectRequest := fmt.Sprintf("CONNECT %s HTTP/1.1\r\n", req.Host)
+	connectRequest += fmt.Sprintf("Host: %s\r\n", req.Host)
+	connectRequest += "Proxy-Connection: keep-alive\r\n"
+	if t.Url.User != nil {
+		authHash := base64.StdEncoding.EncodeToString([]byte(t.Url.User.String()))
+		connectRequest += fmt.Sprintf("Proxy-Authorization: Basic %s\r\n", authHash)
+	}
+	if len(t.ProxyHeaders) != 0 {
+		buf := new(bytes.Buffer)
+		err := t.ProxyHeaders.Write(buf)
+		if err != nil {
+			return nil, err
+		}
+
+		connectRequest += buf.String()
+	}
+	connectRequest += "\r\n"
+
+	_, err = conn.Write([]byte(connectRequest))
+	if err != nil {
+		return nil, err
+	}
+
+	respReader := bufio.NewReader(conn)
+	resp, err := http.ReadResponse(respReader, nil)
+	if err != nil {
+		return nil, err
+	}
+	if resp.StatusCode != 200 {
+		bodyData, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			return nil, err
+		}
+
+		body := string(bodyData)
+		err = fmt.Errorf("CONNECT StatusCode: %d\n%s", resp.StatusCode, body)
+
+		return nil, err
+	}
+
+	return conn, nil
 }

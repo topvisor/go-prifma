@@ -42,19 +42,19 @@ func NewBasicAuth(filename string) (*BasicAuth, error) {
 func (t *BasicAuth) CheckAuth(r *http.Request) string {
 	t.initIfNeed()
 
-	return t.basicAuth.CheckAuth(r)
+	return t.basicAuth.CheckAuth(r.Request)
 }
 
 func (t *BasicAuth) NewContext(ctx context.Context, r *http.Request) context.Context {
 	t.initIfNeed()
 
-	return t.basicAuth.NewContext(ctx, r)
+	return t.basicAuth.NewContext(ctx, r.Request)
 }
 
 func (t *BasicAuth) RequireAuth(w http.ResponseWriter, r *http.Request) {
 	t.initIfNeed()
 
-	t.basicAuth.RequireAuth(w, r)
+	t.basicAuth.RequireAuth(w, r.Request)
 }
 
 func (t *BasicAuth) initIfNeed() {
