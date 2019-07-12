@@ -7,7 +7,7 @@ import (
 )
 
 var configMap = map[string]interface{}{
-	"server": map[string]interface{}{
+	"listen": map[string]interface{}{
 		"listenPort": 3128,
 		"listenType": "http",
 	},
@@ -27,13 +27,13 @@ func TestParseConfig(t *testing.T) {
 		t.Fatal(err.Error())
 	}
 
-	listenPort := configMap["server"].(map[string]interface{})["listenPort"].(int)
-	if config.Server.ListenPort != listenPort {
+	listenPort := configMap["listen"].(map[string]interface{})["listenPort"].(int)
+	if config.Listen.ListenPort != listenPort {
 		t.Fatal("server.listenPort must be " + string(listenPort))
 	}
 
-	listenType := configMap["server"].(map[string]interface{})["listenType"].(string)
-	if config.Server.ListenType != listenType {
+	listenType := configMap["listen"].(map[string]interface{})["listenType"].(string)
+	if config.Listen.ListenType != listenType {
 		t.Fatal("server.listenPort must be " + listenType)
 	}
 

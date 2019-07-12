@@ -22,7 +22,7 @@ func ConditionTypeFromString(conditionTypeStr string) (conditionType, error) {
 	case "dstDomainRegexp":
 		return ConditionTypeDstDomainRegexp, nil
 	default:
-		return -1, errors.New("unavailable condition type")
+		return -1, errors.New(fmt.Sprintf("unavailable condition type: \"%s\"", conditionTypeStr))
 	}
 }
 
@@ -82,7 +82,7 @@ func (t *Condition) getTester() (condition, error) {
 				return nil, err
 			}
 		default:
-			return nil, errors.New("unavailable condition type")
+			return nil, errors.New(fmt.Sprintf("unavailable condition type: \"%v\"", t.Type))
 		}
 	}
 

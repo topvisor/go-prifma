@@ -16,9 +16,10 @@ type ConfigCondition struct {
 	Handler   ConfigHandler `json:"handler"`
 }
 
-type ConfigServer struct {
-	ListenPort int    `json:"listenPort"`
-	ListenType string `json:"listenType"`
+type ConfigListen struct {
+	ListenIp   *string `json:"listenIp,omitempty"`
+	ListenPort int     `json:"listenPort"`
+	ListenType string  `json:"listenType"`
 }
 
 type ConfigHandler struct {
@@ -35,7 +36,7 @@ type ConfigHandler struct {
 }
 
 type Config struct {
-	Server ConfigServer `json:"server"`
+	Listen ConfigListen `json:"server"`
 	ConfigHandler
 }
 

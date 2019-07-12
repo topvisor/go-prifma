@@ -3,6 +3,8 @@ package proxy
 import (
 	"context"
 	"errors"
+	"fmt"
+	"net"
 	"net/http"
 )
 
@@ -17,11 +19,12 @@ func ListenTypeFromString(lTypeStr string) (listenType, error) {
 	case "http":
 		return ListenTypeHttp, nil
 	default:
-		return -1, errors.New("unavailable listen type")
+		return -1, errors.New(fmt.Sprintf("unavailable listen type: \"%s\"", lTypeStr))
 	}
 }
 
 type Server struct {
+	ListenIp   *net.IP
 	ListenPort int
 	ListenType listenType
 	Handler    Handler
@@ -30,8 +33,16 @@ type Server struct {
 }
 
 func (t *Server) SetFromConfig(config Config) error {
-	port := config.Server.ListenPort
-	ltype, err := ListenTypeFromString(config.Server.ListenType)
+	port := config.Listen.ListenPort
+
+	var ip net.IP
+	if config.Listen.ListenIp != nil {
+		if ip = net.ParseIP(*config.Listen.ListenIp); ip == nil {
+			return errors.New(fmt.Sprintf("incorrect ip address: \"%s\"", *config.Listen.ListenIp))
+		}
+	}
+
+	ltype, err := ListenTypeFromString(config.Listen.ListenType)
 	if err != nil {
 		return err
 	}
@@ -44,6 +55,7 @@ func (t *Server) SetFromConfig(config Config) error {
 		return err
 	}
 
+	t.ListenIp = &ip
 	t.ListenPort = port
 	t.ListenType = ltype
 	t.Handler = handler
@@ -69,9 +81,16 @@ func (t *Server) ListenAndServe() error {
 		_ = t.Handler.Close()
 	}()
 
-	err := t.httpServer.ListenAndServe()
-	if err != http.ErrServerClosed {
-		t.Handler.ErrorLogger.Println(err)
+	var err error
+
+	switch t.ListenType {
+	case ListenTypeHttp:
+		t.httpServer.Addr = fmt.Sprintf(":%d", t.ListenPort)
+		if err = t.httpServer.ListenAndServe(); err != http.ErrServerClosed {
+			t.Handler.ErrorLogger.Println(err)
+		}
+	default:
+		err = errors.New(fmt.Sprintf("unavailable listen type: \"%v\"", t.ListenType))
 	}
 
 	return err

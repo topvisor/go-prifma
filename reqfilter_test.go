@@ -48,6 +48,6 @@ package go_proxy_server
 //	}
 //
 //	reqfilter := New(config)
-//	err = (*http.Server)(reqfilter).ListenAndServe()
+//	err = (*http.Listen)(reqfilter).ListenAndServe()
 //	t.Log(err)
 //}

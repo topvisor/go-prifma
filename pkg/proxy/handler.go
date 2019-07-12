@@ -2,6 +2,7 @@ package proxy
 
 import (
 	"errors"
+	"fmt"
 	"net"
 )
 
@@ -101,12 +102,12 @@ func (t *Handler) setFromConfig(config ConfigHandler) error {
 
 	if config.OutgoingIpV4 != nil {
 		if t.OutgoingIpV4 = net.ParseIP(*config.OutgoingIpV4); t.OutgoingIpV4 == nil {
-			return errors.New("incorrect ipV4 address")
+			return errors.New(fmt.Sprintf("incorrect outgoing ip v4 address: \"%s\"", *config.OutgoingIpV4))
 		}
 	}
 	if config.OutgoingIpV6 != nil {
 		if t.OutgoingIpV6 = net.ParseIP(*config.OutgoingIpV6); t.OutgoingIpV6 == nil {
-			return errors.New("incorrect ipV6 address")
+			return errors.New(fmt.Sprintf("incorrect outgoing ip v6 address: \"%s\"", *config.OutgoingIpV6))
 		}
 	}
 
