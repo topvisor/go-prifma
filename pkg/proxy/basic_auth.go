@@ -59,12 +59,12 @@ func (t *BasicAuth) RequireAuth(w http.ResponseWriter, r *http.Request) {
 
 func (t *BasicAuth) initIfNeed() {
 	if t.basicAuth.Secrets == nil {
-		t.basicAuth.Secrets = t.sercers
+		t.basicAuth.Secrets = t.secrets
 		t.basicAuth.Headers = auth.ProxyHeaders
 	}
 }
 
-func (t *BasicAuth) sercers(user, realm string) string {
+func (t *BasicAuth) secrets(user, realm string) string {
 	password, exists := t.Users[user]
 	if !exists {
 		return ""
