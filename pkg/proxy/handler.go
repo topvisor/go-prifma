@@ -3,8 +3,11 @@ package proxy
 import (
 	"errors"
 	"fmt"
+	"io"
 	"net"
 	"net/http"
+	"net/url"
+	"strings"
 	"time"
 )
 
@@ -130,12 +133,12 @@ func (t *Handler) setFromConfig(config ConfigHandler) error {
 		return errors.New(".htpasswd must be set")
 	}
 	if config.OutgoingIpV4 != nil {
-		if t.OutgoingIpV4 = net.ParseIP(*config.OutgoingIpV4); t.OutgoingIpV4 == nil {
+		if t.OutgoingIpV4 = net.ParseIP(*config.OutgoingIpV4); t.OutgoingIpV4 == nil || strings.Contains(*config.OutgoingIpV4, ":") {
 			return fmt.Errorf("incorrect outgoing ip v4 address: \"%s\"", *config.OutgoingIpV4)
 		}
 	}
 	if config.OutgoingIpV6 != nil {
-		if t.OutgoingIpV6 = net.ParseIP(*config.OutgoingIpV6); t.OutgoingIpV6 == nil {
+		if t.OutgoingIpV6 = net.ParseIP(*config.OutgoingIpV6); t.OutgoingIpV6 == nil || strings.Contains(*config.OutgoingIpV6, ".") {
 			return fmt.Errorf("incorrect outgoing ip v6 address: \"%s\"", *config.OutgoingIpV6)
 		}
 	}
@@ -197,25 +200,35 @@ func (t *Handler) serveHTTP(rw http.ResponseWriter, req *http.Request) {
 	if req.Method == http.MethodConnect {
 		t.serveTunnel(rw, req)
 	} else {
-
+		//(*httputil.ReverseProxy)(t).ServeHTTP(rw, req)
 	}
 }
 
 func (t *Handler) serveTunnel(rw http.ResponseWriter, req *http.Request) {
 	var destConn net.Conn
 	var err error
+	var dialer *dialer
 
+	if dialer, err = t.getDialer(req); err != nil {
+		http.Error(rw, err.Error(), http.StatusBadRequest)
+		//t.AccessLogger.Println() // ###
+		return
+	}
 	if t.Proxy != nil {
-		if destConn, err = t.Proxy.connect(req, t.getDialTimeout()); err != nil {
-			http.Error(rw, err.Error(), http.StatusServiceUnavailable)
+		if destConn, err = t.Proxy.connect(req, dialer); err != nil {
+			http.Error(rw, err.Error(), http.StatusBadGateway)
+			//t.AccessLogger.Println() // ###
 			return
 		}
 	}
-
 	if destConn == nil {
-		if destConn, err = connectToHost(req.Host, t.getDialTimeout()); err != nil {
-			fmt.Println(err.Error())
-			http.Error(rw, err.Error(), http.StatusServiceUnavailable)
+		destUrl := &url.URL{Host: req.Host}
+		if destUrl.Port() == "" {
+			destUrl.Host = net.JoinHostPort(req.Host, "443")
+		}
+		if destConn, err = dialer.connect(destUrl); err != nil {
+			http.Error(rw, err.Error(), http.StatusBadGateway)
+			//t.AccessLogger.Println() // ###
 			return
 		}
 	}
@@ -225,20 +238,50 @@ func (t *Handler) serveTunnel(rw http.ResponseWriter, req *http.Request) {
 	clientConn, _, err := rw.(http.Hijacker).Hijack()
 	if err != nil {
 		_ = destConn.Close()
-		fmt.Println(err.Error())
-		http.Error(rw, err.Error(), http.StatusServiceUnavailable)
+		http.Error(rw, err.Error(), http.StatusInternalServerError)
+		//t.ErrorLogger.Println() // ###
 		return
 	}
+
+	//t.AccessLogger.Println() // ###
 
 	go transfer(clientConn, destConn)
 	go transfer(destConn, clientConn)
 }
 
-func (t *Handler) getDialTimeout() time.Duration {
-	var dialTimeout time.Duration
+func (t *Handler) getDialer(req *http.Request) (*dialer, error) {
+	dialer := new(dialer)
+
+	dialer.lIpV4 = t.OutgoingIpV4
+	dialer.lIpV6 = t.OutgoingIpV6
+
 	if t.DialTimeout != nil {
-		dialTimeout = *t.DialTimeout
+		dialer.Timeout = *t.DialTimeout
+	}
+	if t.EnableUseIpHeader != nil && *t.EnableUseIpHeader {
+		if lIpStr := req.Header.Get("Proxy-Use-IpV4"); lIpStr != "" {
+			lIp := net.ParseIP(lIpStr)
+			if lIp == nil || strings.Contains(lIpStr, ":") {
+				return nil, fmt.Errorf("incorrect outgoing ip v4 address: \"%s\"", lIpStr)
+			}
+
+			dialer.lIpV4 = lIp
+		}
+		if lIpStr := req.Header.Get("Proxy-Use-IpV6"); lIpStr != "" {
+			lIp := net.ParseIP(lIpStr)
+			if lIp == nil || strings.Contains(lIpStr, ".") {
+				return nil, fmt.Errorf("incorrect outgoing ip v6 address: \"%s\"", lIpStr)
+			}
+
+			dialer.lIpV6 = lIp
+		}
 	}
 
-	return dialTimeout
+	return dialer, nil
+}
+
+func transfer(src io.ReadCloser, dst io.WriteCloser) {
+	_, _ = io.Copy(dst, src)
+	_ = src.Close()
+	_ = dst.Close()
 }

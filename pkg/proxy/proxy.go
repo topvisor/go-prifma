@@ -9,7 +9,6 @@ import (
 	"net"
 	"net/http"
 	"net/url"
-	"time"
 )
 
 type Proxy struct {
@@ -36,8 +35,8 @@ func (t *Proxy) setFromConfig(config ConfigProxy) error {
 	return nil
 }
 
-func (t *Proxy) connect(req *http.Request, dialTimeout time.Duration) (net.Conn, error) {
-	conn, err := connectToUrl(t.Url, dialTimeout)
+func (t *Proxy) connect(req *http.Request, dialer *dialer) (net.Conn, error) {
+	conn, err := dialer.connectToUrl(t.Url)
 	if err != nil {
 		return nil, err
 	}
