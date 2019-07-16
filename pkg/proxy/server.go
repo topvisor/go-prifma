@@ -13,12 +13,13 @@ const (
 	ListenTypeHttp listenType = iota
 )
 
-func ListenTypeFromString(lTypeStr string) (listenType, error) {
+func ListenTypeFromString(lTypeStr string) (*listenType, error) {
 	switch lTypeStr {
 	case "http":
-		return ListenTypeHttp, nil
+		listenType := ListenTypeHttp
+		return &listenType, nil
 	default:
-		return -1, fmt.Errorf("unavailable listen type: \"%s\"", lTypeStr)
+		return nil, fmt.Errorf("unavailable listen type: \"%s\"", lTypeStr)
 	}
 }
 
@@ -56,7 +57,7 @@ func (t *Server) SetFromConfig(config Config) error {
 
 	t.ListenIp = &ip
 	t.ListenPort = port
-	t.ListenType = ltype
+	t.ListenType = *ltype
 	t.Handler = handler
 
 	return nil

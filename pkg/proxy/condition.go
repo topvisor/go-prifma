@@ -16,14 +16,16 @@ const (
 	ConditionTypeDstDomainRegexp
 )
 
-func ConditionTypeFromString(conditionTypeStr string) (conditionType, error) {
+func ConditionTypeFromString(conditionTypeStr string) (*conditionType, error) {
 	switch conditionTypeStr {
 	case "srcIpCIDR":
-		return ConditionTypeSrcIpCIDR, nil
+		conditionType := ConditionTypeSrcIpCIDR
+		return &conditionType, nil
 	case "dstDomainRegexp":
-		return ConditionTypeDstDomainRegexp, nil
+		conditionType := ConditionTypeDstDomainRegexp
+		return &conditionType, nil
 	default:
-		return -1, fmt.Errorf("unavailable condition type: \"%s\"", conditionTypeStr)
+		return nil, fmt.Errorf("unavailable condition type: \"%s\"", conditionTypeStr)
 	}
 }
 
@@ -47,10 +49,12 @@ func ParseConditionFromString(conditionStr string) (*Condition, error) {
 		return nil, fmt.Errorf("parse condition from string error: \"%s\"", conditionStr)
 	}
 
-	if condition.Type, err = ConditionTypeFromString(conditionStrs[0]); err != nil {
+	conditionType, err := ConditionTypeFromString(conditionStrs[0])
+	if err != nil {
 		return nil, err
 	}
 
+	condition.Type = *conditionType
 	condition.Value = conditionStrs[1]
 
 	if _, err = condition.getTester(); err != nil {
