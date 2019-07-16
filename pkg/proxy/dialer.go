@@ -71,3 +71,17 @@ func (t *dialer) selectLAddr(host string) (net.Addr, error) {
 		return nil, fmt.Errorf("unreachable host: \"%s\"", host)
 	}
 }
+
+func (t *dialer) ipsString() string {
+	ipV4Str := ""
+	if t.lIpV4 != nil {
+		ipV4Str = t.lIpV4.String()
+	}
+
+	ipV6Str := ""
+	if t.lIpV6 != nil {
+		ipV6Str = t.lIpV6.String()
+	}
+
+	return fmt.Sprintf("%s:%s", ipV4Str, ipV6Str)
+}

@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -33,7 +34,8 @@ type Handler struct {
 	BlockRequests     *bool
 	Proxy             *Proxy
 
-	conditions map[conditionUniqueKey]*condWithHandler
+	conditions     map[conditionUniqueKey]*condWithHandler
+	reverseProxies sync.Map
 }
 
 func (t *Handler) Close() error {
@@ -200,6 +202,7 @@ func (t *Handler) serveHTTP(rw http.ResponseWriter, req *http.Request) {
 	if req.Method == http.MethodConnect {
 		t.serveTunnel(rw, req)
 	} else {
+		t.serveReverseProxy(rw, req)
 		//(*httputil.ReverseProxy)(t).ServeHTTP(rw, req)
 	}
 }
@@ -247,6 +250,28 @@ func (t *Handler) serveTunnel(rw http.ResponseWriter, req *http.Request) {
 
 	go transfer(clientConn, destConn)
 	go transfer(destConn, clientConn)
+}
+
+func (t *Handler) serveReverseProxy(rw http.ResponseWriter, req *http.Request) {
+	dialer, err := t.getDialer(req)
+	if err != nil {
+		http.Error(rw, err.Error(), http.StatusBadRequest)
+		//t.AccessLogger.Println() // ###
+		return
+	}
+
+	ipsKey := dialer.ipsString()
+
+	var rProxy *reverseProxy
+	if val, ok := t.reverseProxies.Load(ipsKey); ok {
+		rProxy = val.(*reverseProxy)
+	} else {
+		rProxy = newReverseProxy(t, dialer)
+		t.reverseProxies.Store(ipsKey, rProxy)
+	}
+
+	rProxy.ServeHTTP(rw, req)
+	//t.AccessLogger.Println() // ###
 }
 
 func (t *Handler) getDialer(req *http.Request) (*dialer, error) {

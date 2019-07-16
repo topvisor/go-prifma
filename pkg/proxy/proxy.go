@@ -36,7 +36,7 @@ func (t *Proxy) setFromConfig(config ConfigProxy) error {
 }
 
 func (t *Proxy) connect(req *http.Request, dialer *dialer) (net.Conn, error) {
-	conn, err := dialer.connectToUrl(t.Url)
+	conn, err := dialer.connect(t.Url)
 	if err != nil {
 		return nil, err
 	}
