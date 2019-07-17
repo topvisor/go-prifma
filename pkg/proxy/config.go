@@ -5,22 +5,26 @@ import (
 	"os"
 )
 
+// ConfigProxy is a part of config.json which describes a Proxy
 type ConfigProxy struct {
 	Url          string            `json:"url"`
 	ProxyHeaders map[string]string `json:"proxyHeaders,omitempty"`
 }
 
+// ConfigCondition is a part of config.json which describes a Condition
 type ConfigCondition struct {
 	Condition string        `json:"condition"`
 	Handler   ConfigHandler `json:"handler"`
 }
 
+// ConfigListen is a part of config.json which describes a Server
 type ConfigListen struct {
 	ListenIp   *string `json:"listenIp,omitempty"`
 	ListenPort int     `json:"listenPort"`
 	ListenType string  `json:"listenType"`
 }
 
+// ConfigListen is a part of config.json which describes a Handler
 type ConfigHandler struct {
 	AccessLog         *string           `json:"accessLog,omitempty"`
 	ErrorLog          *string           `json:"errorLog,omitempty"`
@@ -35,6 +39,7 @@ type ConfigHandler struct {
 	Conditions        []ConfigCondition `json:"conditions,omitempty"`
 }
 
+// ConfigListen is a part of config.json which describes the Server and the base Handler
 type Config struct {
 	Listen ConfigListen `json:"server"`
 	ConfigHandler
