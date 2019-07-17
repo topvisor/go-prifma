@@ -13,7 +13,7 @@ const (
 	ListenTypeHttp listenType = iota
 )
 
-func ListenTypeFromString(lTypeStr string) (*listenType, error) {
+func listenTypeFromString(lTypeStr string) (*listenType, error) {
 	switch lTypeStr {
 	case "http":
 		listenType := ListenTypeHttp
@@ -42,7 +42,7 @@ func (t *Server) SetFromConfig(config Config) error {
 		}
 	}
 
-	ltype, err := ListenTypeFromString(config.Listen.ListenType)
+	ltype, err := listenTypeFromString(config.Listen.ListenType)
 	if err != nil {
 		return err
 	}

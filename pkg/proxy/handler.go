@@ -181,7 +181,7 @@ func (t *Handler) getHandler(req *http.Request) *Handler {
 	}
 
 	for _, condAndHandler := range t.conditions {
-		if condAndHandler.tester.Test(req) {
+		if condAndHandler.tester.test(req) {
 			return condAndHandler.handler
 		}
 	}

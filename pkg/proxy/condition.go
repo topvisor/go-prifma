@@ -9,14 +9,20 @@ import (
 	"strings"
 )
 
+// conditionType determines condition's value parser and request's parameter which tested by condition
 type conditionType byte
 
+// ConditionType determines condition's value parser and request's parameter which tested by condition
+//
+// ConditionTypeSrcIpCIDR - request's source ip; it's tested by CIDR subnet mask
+// ConditionTypeDstDomainRegexp - request's destination domain; it's tested by regular expression
 const (
 	ConditionTypeSrcIpCIDR conditionType = iota
 	ConditionTypeDstDomainRegexp
 )
 
-func ConditionTypeFromString(conditionTypeStr string) (*conditionType, error) {
+// conditionTypeFromString parses conditionType from string.
+func conditionTypeFromString(conditionTypeStr string) (*conditionType, error) {
 	switch conditionTypeStr {
 	case "srcIpCIDR":
 		conditionType := ConditionTypeSrcIpCIDR
@@ -30,7 +36,7 @@ func ConditionTypeFromString(conditionTypeStr string) (*conditionType, error) {
 }
 
 type condition interface {
-	Test(req *http.Request) bool
+	test(req *http.Request) bool
 }
 
 type Condition struct {
@@ -49,7 +55,7 @@ func ParseConditionFromString(conditionStr string) (*Condition, error) {
 		return nil, fmt.Errorf("parse condition from string error: \"%s\"", conditionStr)
 	}
 
-	conditionType, err := ConditionTypeFromString(conditionStrs[0])
+	conditionType, err := conditionTypeFromString(conditionStrs[0])
 	if err != nil {
 		return nil, err
 	}
@@ -64,13 +70,13 @@ func ParseConditionFromString(conditionStr string) (*Condition, error) {
 	return condition, nil
 }
 
-func (t *Condition) Test(req *http.Request) bool {
+func (t *Condition) test(req *http.Request) bool {
 	tester, err := t.getTester()
 	if err != nil {
 		return false
 	}
 
-	return tester.Test(req)
+	return tester.test(req)
 }
 
 func (t *Condition) getTester() (condition, error) {
@@ -105,7 +111,7 @@ func parseConditionSrcIpCIDRFromString(conditionCIDSStr string) (*conditionCIDR,
 	return (*conditionCIDR)(ipNet), err
 }
 
-func (t *conditionCIDR) Test(req *http.Request) bool {
+func (t *conditionCIDR) test(req *http.Request) bool {
 	ip := net.ParseIP(req.RemoteAddr)
 	if ip == nil {
 		return false
@@ -127,7 +133,7 @@ func parseConditionDstDomainRegexpFromString(conditionRegexpStr string) (*condit
 	return &conditionRegexp{compiledRegexp}, err
 }
 
-func (t *conditionRegexp) Test(req *http.Request) bool {
+func (t *conditionRegexp) test(req *http.Request) bool {
 	host, _, err := net.SplitHostPort(req.Host)
 	if err != nil {
 		return false
