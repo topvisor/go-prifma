@@ -14,8 +14,8 @@ type conditionType byte
 
 // ConditionType determines a condition's value parser and a request's parameter which tested by condition
 //
-// ConditionTypeSrcIpCIDR - request's source ip; it's tested by CIDR subnet mask
-// ConditionTypeDstDomainRegexp - request's destination domain; it's tested by regular expression
+// ConditionTypeSrcIpCIDR - request's source ip; it's tested by a CIDR subnet mask
+// ConditionTypeDstDomainRegexp - request's destination domain; it's tested by a regular expression
 const (
 	ConditionTypeSrcIpCIDR conditionType = iota
 	ConditionTypeDstDomainRegexp
@@ -85,7 +85,7 @@ func (t *Condition) test(req *http.Request) bool {
 	return tester.test(req)
 }
 
-// ###
+// getTester generates a condition of the specified type
 func (t *Condition) getTester() (condition, error) {
 	var err error
 
@@ -107,18 +107,21 @@ func (t *Condition) getTester() (condition, error) {
 	return t.tester, nil
 }
 
-type conditionCIDR net.IPNet
+// conditionSrcIpCIDR is a condition which tested request's source ip by CIDR subnet mask
+type conditionSrcIpCIDR net.IPNet
 
-func parseConditionSrcIpCIDRFromString(conditionCIDSStr string) (*conditionCIDR, error) {
-	_, ipNet, err := net.ParseCIDR(conditionCIDSStr)
+// parseConditionSrcIpCIDRFromString parses conditionSrcIpCIDR from string which contains a CIDR subnet mask
+func parseConditionSrcIpCIDRFromString(conditionCIDRStr string) (*conditionSrcIpCIDR, error) {
+	_, ipNet, err := net.ParseCIDR(conditionCIDRStr)
 	if err != nil {
 		return nil, err
 	}
 
-	return (*conditionCIDR)(ipNet), err
+	return (*conditionSrcIpCIDR)(ipNet), err
 }
 
-func (t *conditionCIDR) test(req *http.Request) bool {
+// test checks the request's source ip by the CIDR subnet mask
+func (t *conditionSrcIpCIDR) test(req *http.Request) bool {
 	ip := net.ParseIP(req.RemoteAddr)
 	if ip == nil {
 		return false
@@ -127,20 +130,23 @@ func (t *conditionCIDR) test(req *http.Request) bool {
 	return (*net.IPNet)(t).Contains(ip)
 }
 
-type conditionRegexp struct {
+// conditionDstDomainRegexp is a condition which tested request's destination domain by a regular expression
+type conditionDstDomainRegexp struct {
 	regexp *regexp.Regexp
 }
 
-func parseConditionDstDomainRegexpFromString(conditionRegexpStr string) (*conditionRegexp, error) {
+// parseConditionDstDomainRegexpFromString parses conditionDstDomainRegexp from string which contains a regular expression
+func parseConditionDstDomainRegexpFromString(conditionRegexpStr string) (*conditionDstDomainRegexp, error) {
 	compiledRegexp, err := regexp.Compile(conditionRegexpStr)
 	if err != nil {
 		return nil, err
 	}
 
-	return &conditionRegexp{compiledRegexp}, err
+	return &conditionDstDomainRegexp{compiledRegexp}, err
 }
 
-func (t *conditionRegexp) test(req *http.Request) bool {
+// test checks the request's destination domain by the regular expression
+func (t *conditionDstDomainRegexp) test(req *http.Request) bool {
 	host, _, err := net.SplitHostPort(req.Host)
 	if err != nil {
 		return false
