@@ -9,10 +9,10 @@ import (
 	"strings"
 )
 
-// conditionType determines condition's value parser and request's parameter which tested by condition
+// conditionType determines a condition's value parser and a request's parameter which tested by condition
 type conditionType byte
 
-// ConditionType determines condition's value parser and request's parameter which tested by condition
+// ConditionType determines a condition's value parser and a request's parameter which tested by condition
 //
 // ConditionTypeSrcIpCIDR - request's source ip; it's tested by CIDR subnet mask
 // ConditionTypeDstDomainRegexp - request's destination domain; it's tested by regular expression
@@ -35,10 +35,13 @@ func conditionTypeFromString(conditionTypeStr string) (*conditionType, error) {
 	}
 }
 
+// condition is a interface of different conditions types
 type condition interface {
 	test(req *http.Request) bool
 }
 
+// Condition is a tester of requests. It uses the type to parse the value and
+// test a request's parameter by the parsed value
 type Condition struct {
 	Type  conditionType
 	Value string
@@ -46,7 +49,9 @@ type Condition struct {
 	tester condition
 }
 
-func ParseConditionFromString(conditionStr string) (*Condition, error) {
+// parseConditionFromString parses the Condition from the string in the format "type:value".
+// For example: "srcIpCIDR:1.2.3.4/32", "dstDomainRegexp:(?i)(www.)?example.com"
+func parseConditionFromString(conditionStr string) (*Condition, error) {
 	var err error
 	condition := new(Condition)
 
@@ -70,6 +75,7 @@ func ParseConditionFromString(conditionStr string) (*Condition, error) {
 	return condition, nil
 }
 
+// test checks the request by condition
 func (t *Condition) test(req *http.Request) bool {
 	tester, err := t.getTester()
 	if err != nil {
@@ -79,6 +85,7 @@ func (t *Condition) test(req *http.Request) bool {
 	return tester.test(req)
 }
 
+// ###
 func (t *Condition) getTester() (condition, error) {
 	var err error
 

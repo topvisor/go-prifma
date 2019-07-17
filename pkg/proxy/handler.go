@@ -156,7 +156,7 @@ func (t *Handler) setFromConfig(config ConfigHandler) error {
 	}
 	if config.Conditions != nil {
 		for _, configCondition := range config.Conditions {
-			condition, err := ParseConditionFromString(configCondition.Condition)
+			condition, err := parseConditionFromString(configCondition.Condition)
 			if err != nil {
 				return err
 			}
