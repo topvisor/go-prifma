@@ -122,7 +122,7 @@ func (t *Handler) setFromConfig(config ConfigHandler) error {
 			return err
 		}
 	}
-	if config.DialTimeout == nil {
+	if config.DialTimeout != nil {
 		dialTimeout := time.Second * time.Duration(*config.DialTimeout)
 		t.DialTimeout = &dialTimeout
 	}

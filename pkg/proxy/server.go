@@ -24,7 +24,7 @@ func ListenTypeFromString(lTypeStr string) (*listenType, error) {
 }
 
 type Server struct {
-	ListenIp   *net.IP
+	ListenIp   net.IP
 	ListenPort int
 	ListenType listenType
 	Handler    Handler
@@ -55,7 +55,7 @@ func (t *Server) SetFromConfig(config Config) error {
 		return err
 	}
 
-	t.ListenIp = &ip
+	t.ListenIp = ip
 	t.ListenPort = port
 	t.ListenType = *ltype
 	t.Handler = handler

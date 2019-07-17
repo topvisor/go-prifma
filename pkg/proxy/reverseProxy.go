@@ -20,12 +20,16 @@ func newReverseProxy(handler *Handler, dialer *dialer) *reverseProxy {
 		dialer: dialer,
 	}
 
-	reverseProxy.Director = removeProxyHeaders
-	reverseProxy.Transport = &http.Transport{
-		Proxy:              http.ProxyURL(handler.Proxy.Url),
-		ProxyConnectHeader: handler.Proxy.ProxyHeaders,
-		DialContext:        reverseProxy.DialContext,
+	transport := &http.Transport{
+		DialContext: reverseProxy.DialContext,
 	}
+	if handler.Proxy != nil {
+		transport.Proxy = http.ProxyURL(handler.Proxy.Url)
+		transport.ProxyConnectHeader = handler.Proxy.ProxyHeaders
+	}
+
+	reverseProxy.Director = removeProxyHeaders
+	reverseProxy.Transport = transport
 	reverseProxy.FlushInterval = -1
 	reverseProxy.ErrorLog = handler.ErrorLogger.logger
 

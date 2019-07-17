@@ -1,6 +1,9 @@
 package main
 
-import "flag"
+import (
+	"flag"
+	"os"
+)
 
 const (
 	configFlag      = "config"
@@ -48,7 +51,7 @@ func (t *flags) parse() error {
 	t.BoolVar(&t.listen, listenFlag, listenDefault, listenUsage)
 	t.BoolVar(&t.listen, listenFlagShort, listenDefault, shortUsage(listenUsage))
 
-	return t.Parse(flag.Args())
+	return t.Parse(os.Args[1:])
 }
 
 func shortUsage(usage string) string {

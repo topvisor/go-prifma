@@ -2,8 +2,8 @@ package main
 
 import (
 	"encoding/json"
-	"fmt"
 	"go-proxy-server/pkg/proxy"
+	"log"
 	"os"
 )
 
@@ -13,17 +13,37 @@ func main() {
 		panic(err)
 	}
 
-	if flags.help {
-		flags.PrintDefaults()
-	} else if flags.init {
+	if flags.init {
 		if err = createDefaultConfigJSON(flags.config); err != nil {
 			panic(err)
 		}
-	} else if flags.listen {
-		fmt.Println("ololo")
-	} else {
+	}
+	if flags.listen {
+		if err = start(flags.config); err != nil {
+			panic(err)
+		}
+	}
+	if !flags.init && !flags.listen {
 		flags.PrintDefaults()
 	}
+}
+
+func start(configFilename string) error {
+	server := new(proxy.Server)
+	if err := server.LoadFromConfig(configFilename); err != nil {
+		return err
+	}
+	if !server.Handler.ErrorLogger.IsInited() {
+		errorLogger := log.New(os.Stderr, "", log.LstdFlags)
+		if err := server.Handler.ErrorLogger.SetLogger(errorLogger); err != nil {
+			return err
+		}
+	}
+	if err := server.ListenAndServe(); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func createDefaultConfigJSON(filename string) error {
@@ -43,7 +63,10 @@ func createDefaultConfigJSON(filename string) error {
 		},
 	}
 
-	if err = json.NewEncoder(file).Encode(config); err != nil {
+	encoder := json.NewEncoder(file)
+	encoder.SetIndent("", "\t")
+
+	if err = encoder.Encode(config); err != nil {
 		return err
 	}
 
