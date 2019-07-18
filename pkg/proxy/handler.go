@@ -12,16 +12,19 @@ import (
 	"time"
 )
 
+// condWithHandler contains the condition by which the handler will be selected
 type condWithHandler struct {
 	tester  condition
 	handler *Handler
 }
 
+// conditionUniqueKey is a key which identify a condition
 type conditionUniqueKey struct {
 	Type  conditionType
 	Value string
 }
 
+// Handler
 type Handler struct {
 	AccessLogger      Logger
 	ErrorLogger       Logger

@@ -6,6 +6,8 @@ import (
 	"net/url"
 )
 
+// dialer is a net.Dialer which select a suitable outgoing ip address depending on a request's destination domain
+// lIpV4 and lIpV6 set a ip addresses from which to select
 type dialer struct {
 	lIpV4 net.IP
 	lIpV6 net.IP
@@ -13,6 +15,7 @@ type dialer struct {
 	net.Dialer
 }
 
+// connect connects to the url
 func (t *dialer) connect(url *url.URL) (net.Conn, error) {
 	host := url.Hostname()
 	if host == "" {
@@ -45,6 +48,7 @@ func (t *dialer) connect(url *url.URL) (net.Conn, error) {
 	return t.Dial("tcp", net.JoinHostPort(host, port))
 }
 
+// selectLAddr select a suitable outgoing ip address depending on a request's destination domain
 func (t *dialer) selectLAddr(host string) (net.Addr, error) {
 	if t.lIpV4 == nil && t.lIpV6 == nil {
 		return nil, nil
@@ -72,6 +76,7 @@ func (t *dialer) selectLAddr(host string) (net.Addr, error) {
 	}
 }
 
+// ipsString generates a string which represents ip addresses which passed to dialer
 func (t *dialer) ipsString() string {
 	ipV4Str := ""
 	if t.lIpV4 != nil {

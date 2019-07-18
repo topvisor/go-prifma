@@ -45,6 +45,7 @@ type Config struct {
 	ConfigHandler
 }
 
+// ParseConfig parses a config from the json string
 func ParseConfig(jsonStr string) (*Config, error) {
 	config := new(Config)
 	if err := json.Unmarshal([]byte(jsonStr), config); err != nil {
@@ -54,6 +55,7 @@ func ParseConfig(jsonStr string) (*Config, error) {
 	return config, nil
 }
 
+// ParseConfigFromFile parses a config from the file
 func ParseConfigFromFile(filename string) (*Config, error) {
 	file, err := os.Open(filename)
 	if err != nil {
