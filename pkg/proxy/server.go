@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net"
 	"net/http"
+	"time"
 )
 
 type listenType byte
@@ -24,10 +25,15 @@ func listenTypeFromString(lTypeStr string) (*listenType, error) {
 }
 
 type Server struct {
-	ListenIp   net.IP
-	ListenPort int
-	ListenType listenType
-	Handler    Handler
+	ListenIp          net.IP
+	ListenPort        int
+	ListenType        listenType
+	ErrorLogger       Logger
+	ReadTimeout       time.Duration
+	ReadHeaderTimeout time.Duration
+	WriteTimeout      time.Duration
+	IdleTimeout       time.Duration
+	Handler           Handler
 
 	httpServer http.Server
 }
@@ -47,6 +53,35 @@ func (t *Server) SetFromConfig(config Config) error {
 		return err
 	}
 
+	var errorLogger Logger
+	if config.Listen.ErrorLog != nil {
+		if err = errorLogger.SetFile(*config.Listen.ErrorLog); err != nil {
+			return err
+		}
+	}
+
+	var readTimeout, readHeaderTimeout, writeTimeout, idleTimeout time.Duration
+	if config.Listen.ReadTimeout != nil {
+		if readTimeout, err = time.ParseDuration(*config.Listen.ReadTimeout); err != nil {
+			return err
+		}
+	}
+	if config.Listen.ReadHeaderTimeout != nil {
+		if readHeaderTimeout, err = time.ParseDuration(*config.Listen.ReadHeaderTimeout); err != nil {
+			return err
+		}
+	}
+	if config.Listen.WriteTimeout != nil {
+		if writeTimeout, err = time.ParseDuration(*config.Listen.WriteTimeout); err != nil {
+			return err
+		}
+	}
+	if config.Listen.IdleTimeout != nil {
+		if idleTimeout, err = time.ParseDuration(*config.Listen.IdleTimeout); err != nil {
+			return err
+		}
+	}
+
 	handler := Handler{}
 	if err = handler.setFromConfig(config.ConfigHandler); err != nil {
 		return err
@@ -58,6 +93,11 @@ func (t *Server) SetFromConfig(config Config) error {
 	t.ListenIp = ip
 	t.ListenPort = port
 	t.ListenType = *ltype
+	t.ErrorLogger = errorLogger
+	t.ReadTimeout = readTimeout
+	t.ReadHeaderTimeout = readHeaderTimeout
+	t.WriteTimeout = writeTimeout
+	t.IdleTimeout = idleTimeout
 	t.Handler = handler
 
 	return nil
@@ -79,9 +119,12 @@ func (t *Server) LoadFromConfig(filename string) error {
 func (t *Server) ListenAndServe() error {
 	defer func() {
 		_ = t.Handler.Close()
+		_ = t.ErrorLogger.Close()
 	}()
 
 	var err error
+
+	t.Handler.setErrorLogger(&t.ErrorLogger)
 
 	ipStr := ""
 	if t.ListenIp != nil {
@@ -90,11 +133,16 @@ func (t *Server) ListenAndServe() error {
 
 	t.httpServer.Addr = fmt.Sprintf("%s:%d", ipStr, t.ListenPort)
 	t.httpServer.Handler = &t.Handler
+	t.httpServer.ErrorLog = t.ErrorLogger.logger
+	t.httpServer.ReadTimeout = t.ReadTimeout
+	t.httpServer.ReadHeaderTimeout = t.ReadHeaderTimeout
+	t.httpServer.WriteTimeout = t.WriteTimeout
+	t.httpServer.IdleTimeout = t.IdleTimeout
 
 	switch t.ListenType {
 	case ListenTypeHttp:
 		if err = t.httpServer.ListenAndServe(); err != http.ErrServerClosed {
-			t.Handler.ErrorLogger.Println(err)
+			t.ErrorLogger.Println(err)
 		}
 	default:
 		err = fmt.Errorf("unavailable listen type: \"%v\"", t.ListenType)

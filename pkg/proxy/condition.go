@@ -57,7 +57,7 @@ func parseConditionFromString(conditionStr string) (*Condition, error) {
 
 	conditionStrs := strings.SplitN(conditionStr, ":", 2)
 	if len(conditionStrs) != 2 {
-		return nil, fmt.Errorf("parse condition from string error: \"%s\"", conditionStr)
+		return nil, fmt.Errorf("parse condition from string Error: \"%s\"", conditionStr)
 	}
 
 	conditionType, err := conditionTypeFromString(conditionStrs[0])

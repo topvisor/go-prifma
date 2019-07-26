@@ -1,14 +1,16 @@
 package proxy
 
 import (
+	"context"
 	"errors"
 	"fmt"
-	"io"
+	auth "github.com/abbot/go-http-auth"
 	"net"
 	"net/http"
 	"net/url"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 )
 
@@ -24,12 +26,23 @@ type conditionUniqueKey struct {
 	Value string
 }
 
+const (
+	keyReqId = iota + 413
+	keyCancel
+	keyRespWriter
+	keyError
+)
+
+const (
+	StatusClientClosedRequest     = 499
+	StatusTextClientClosedRequest = "Client Closed Request"
+)
+
 // Handler
 type Handler struct {
 	AccessLogger      Logger
-	ErrorLogger       Logger
-	DialTimeout       *time.Duration
-	Htpasswd          *BasicAuth
+	HandleTimeout     *time.Duration
+	BasicAuth         *auth.BasicAuth
 	EnableBasicAuth   *bool
 	OutgoingIpV4      net.IP
 	OutgoingIpV6      net.IP
@@ -37,21 +50,22 @@ type Handler struct {
 	BlockRequests     *bool
 	Proxy             *Proxy
 
+	errorLogger    *Logger
 	conditions     map[conditionUniqueKey]*condWithHandler
 	reverseProxies sync.Map
+	nextReqId      uint64
 }
 
 func (t *Handler) Close() error {
 	if err := t.AccessLogger.Close(); err != nil {
 		return err
 	}
-	if err := t.ErrorLogger.Close(); err != nil {
-		return err
-	}
 
-	for _, condWithHandler := range t.conditions {
-		if err := condWithHandler.handler.Close(); err != nil {
-			return err
+	if t.conditions != nil {
+		for _, condWithHandler := range t.conditions {
+			if err := condWithHandler.handler.Close(); err != nil {
+				return err
+			}
 		}
 	}
 
@@ -74,14 +88,11 @@ func (t *Handler) SetConditionHandler(cond *Condition, handler Handler) error {
 	if !handler.AccessLogger.IsInited() {
 		handler.AccessLogger = t.AccessLogger
 	}
-	if !handler.ErrorLogger.IsInited() {
-		handler.ErrorLogger = t.ErrorLogger
+	if handler.HandleTimeout == nil {
+		handler.HandleTimeout = t.HandleTimeout
 	}
-	if handler.DialTimeout == nil {
-		handler.DialTimeout = t.DialTimeout
-	}
-	if handler.Htpasswd == nil {
-		handler.Htpasswd = t.Htpasswd
+	if handler.BasicAuth == nil {
+		handler.BasicAuth = t.BasicAuth
 	}
 	if handler.EnableBasicAuth == nil {
 		handler.EnableBasicAuth = t.EnableBasicAuth
@@ -112,6 +123,16 @@ func (t *Handler) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 	handler.serveHTTP(rw, req)
 }
 
+func (t *Handler) setErrorLogger(errorLogger *Logger) {
+	t.errorLogger = errorLogger
+
+	if t.conditions != nil {
+		for _, condWithHandler := range t.conditions {
+			condWithHandler.handler.setErrorLogger(errorLogger)
+		}
+	}
+}
+
 func (t *Handler) setFromConfig(config ConfigHandler) error {
 	var err error
 
@@ -120,22 +141,24 @@ func (t *Handler) setFromConfig(config ConfigHandler) error {
 			return err
 		}
 	}
-	if config.ErrorLog != nil {
-		if err = t.ErrorLogger.SetFile(*config.ErrorLog); err != nil {
+	if config.HandleTimeout != nil {
+		handleTimeout, err := time.ParseDuration(*config.HandleTimeout)
+		if err != nil {
 			return err
 		}
-	}
-	if config.DialTimeout != nil {
-		dialTimeout := time.Second * time.Duration(*config.DialTimeout)
-		t.DialTimeout = &dialTimeout
+
+		t.HandleTimeout = &handleTimeout
 	}
 	if config.Htpasswd != nil {
-		if t.Htpasswd, err = NewBasicAuth(*config.Htpasswd); err != nil {
+		htpasswd, err := LoadHtpasswd(*config.Htpasswd)
+		if err != nil {
 			return err
 		}
+
+		t.BasicAuth = &htpasswd.BasicAuth
 	}
-	if t.EnableBasicAuth = config.EnableBasicAuth; t.EnableBasicAuth != nil && *t.EnableBasicAuth && t.Htpasswd == nil {
-		return errors.New(".htpasswd must be set")
+	if t.EnableBasicAuth = config.EnableBasicAuth; t.EnableBasicAuth != nil && *t.EnableBasicAuth && t.BasicAuth == nil {
+		return errors.New(".BasicAuth must be set")
 	}
 	if config.OutgoingIpV4 != nil {
 		if t.OutgoingIpV4 = net.ParseIP(*config.OutgoingIpV4); t.OutgoingIpV4 == nil || strings.Contains(*config.OutgoingIpV4, ":") {
@@ -193,38 +216,71 @@ func (t *Handler) getHandler(req *http.Request) *Handler {
 }
 
 func (t *Handler) serveHTTP(rw http.ResponseWriter, req *http.Request) {
-	if t.EnableBasicAuth != nil && *t.EnableBasicAuth && t.Htpasswd != nil && t.Htpasswd.CheckAuth(req) == "" {
-		t.Htpasswd.RequireAuth(rw, req)
-		return
+	reqId := atomic.AddUint64(&t.nextReqId, 1)
+
+	ctx := req.Context()
+	ctx = context.WithValue(ctx, keyReqId, reqId)
+	if t.HandleTimeout != nil {
+		ctx, _ = context.WithTimeout(ctx, *t.HandleTimeout)
+	}
+
+	respWriterChan := make(chan responseWriter)
+	go func() {
+		respWriterChan <- t.serveHTTPContext(req)
+		close(respWriterChan)
+	}()
+
+	var respWriter responseWriter
+	select {
+	case respWriter = <-respWriterChan:
+	case <-ctx.Done():
+	}
+
+	switch ctx.Err() {
+	case context.DeadlineExceeded:
+		respWriter = &responseWriterError{Code: http.StatusGatewayTimeout}
+	case context.Canceled:
+		respWriter = &responseWriterError{Code: StatusClientClosedRequest, Error: StatusTextClientClosedRequest}
+	}
+
+	if respWriter == nil {
+		respWriter = &responseWriterError{Code: http.StatusInternalServerError}
+	}
+	if err := respWriter.Write(rw); err != nil {
+		t.errorLogger.Println(err)
+	}
+
+	t.AccessLogger.Printf("%s ")
+
+	// ### access log
+}
+
+func (t *Handler) serveHTTPContext(req *http.Request) responseWriter {
+	if t.EnableBasicAuth != nil && *t.EnableBasicAuth && t.BasicAuth != nil && t.BasicAuth.CheckAuth(req) == "" {
+		return &responseWriteRequireAuth{req, t.BasicAuth}
 	}
 	if t.BlockRequests != nil && *t.BlockRequests {
-		http.Error(rw, http.StatusText(http.StatusLocked), http.StatusLocked)
-		return
+		return &responseWriterError{Code: http.StatusLocked}
 	}
 
 	if req.Method == http.MethodConnect {
-		t.serveTunnel(rw, req)
+		return t.serveTunnel(req)
 	} else {
-		t.serveReverseProxy(rw, req)
-		//(*httputil.ReverseProxy)(t).ServeHTTP(rw, req)
+		return t.serveReverseProxy(req)
 	}
 }
 
-func (t *Handler) serveTunnel(rw http.ResponseWriter, req *http.Request) {
+func (t *Handler) serveTunnel(req *http.Request) responseWriter {
 	var destConn net.Conn
 	var err error
 	var dialer *dialer
 
 	if dialer, err = t.getDialer(req); err != nil {
-		http.Error(rw, err.Error(), http.StatusBadRequest)
-		//t.AccessLogger.Println() // ###
-		return
+		return &responseWriterError{Code: http.StatusBadGateway}
 	}
 	if t.Proxy != nil {
 		if destConn, err = t.Proxy.connect(req, dialer); err != nil {
-			http.Error(rw, err.Error(), http.StatusBadGateway)
-			//t.AccessLogger.Println() // ###
-			return
+			return &responseWriterError{Code: http.StatusBadGateway}
 		}
 	}
 	if destConn == nil {
@@ -233,34 +289,17 @@ func (t *Handler) serveTunnel(rw http.ResponseWriter, req *http.Request) {
 			destUrl.Host = net.JoinHostPort(req.Host, "443")
 		}
 		if destConn, err = dialer.connect(destUrl); err != nil {
-			http.Error(rw, err.Error(), http.StatusBadGateway)
-			//t.AccessLogger.Println() // ###
-			return
+			return &responseWriterError{Code: http.StatusBadGateway}
 		}
 	}
 
-	rw.WriteHeader(http.StatusOK)
-
-	clientConn, _, err := rw.(http.Hijacker).Hijack()
-	if err != nil {
-		_ = destConn.Close()
-		http.Error(rw, err.Error(), http.StatusInternalServerError)
-		//t.ErrorLogger.Println() // ###
-		return
-	}
-
-	//t.AccessLogger.Println() // ###
-
-	go transfer(clientConn, destConn)
-	go transfer(destConn, clientConn)
+	return &responseWriterTunnel{DestConn: destConn}
 }
 
-func (t *Handler) serveReverseProxy(rw http.ResponseWriter, req *http.Request) {
+func (t *Handler) serveReverseProxy(req *http.Request) responseWriter {
 	dialer, err := t.getDialer(req)
 	if err != nil {
-		http.Error(rw, err.Error(), http.StatusBadRequest)
-		//t.AccessLogger.Println() // ###
-		return
+		return &responseWriterError{Code: http.StatusBadGateway}
 	}
 
 	ipsKey := dialer.ipsString()
@@ -273,8 +312,10 @@ func (t *Handler) serveReverseProxy(rw http.ResponseWriter, req *http.Request) {
 		t.reverseProxies.Store(ipsKey, rProxy)
 	}
 
-	rProxy.ServeHTTP(rw, req)
-	//t.AccessLogger.Println() // ###
+	return &responseWriteReverseProxy{
+		Request:      req,
+		ReverseProxy: rProxy,
+	}
 }
 
 func (t *Handler) getDialer(req *http.Request) (*dialer, error) {
@@ -283,9 +324,6 @@ func (t *Handler) getDialer(req *http.Request) (*dialer, error) {
 	dialer.lIpV4 = t.OutgoingIpV4
 	dialer.lIpV6 = t.OutgoingIpV6
 
-	if t.DialTimeout != nil {
-		dialer.Timeout = *t.DialTimeout
-	}
 	if t.EnableUseIpHeader != nil && *t.EnableUseIpHeader {
 		if lIpStr := req.Header.Get("Proxy-Use-IpV4"); lIpStr != "" {
 			lIp := net.ParseIP(lIpStr)
@@ -306,10 +344,4 @@ func (t *Handler) getDialer(req *http.Request) (*dialer, error) {
 	}
 
 	return dialer, nil
-}
-
-func transfer(src io.ReadCloser, dst io.WriteCloser) {
-	_, _ = io.Copy(dst, src)
-	_ = src.Close()
-	_ = dst.Close()
 }

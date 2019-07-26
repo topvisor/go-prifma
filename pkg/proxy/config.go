@@ -19,17 +19,21 @@ type ConfigCondition struct {
 
 // ConfigListen is a part of config.json which describes a Server
 type ConfigListen struct {
-	ListenIp   *string `json:"listenIp,omitempty"`
-	ListenPort int     `json:"listenPort"`
-	ListenType string  `json:"listenType"`
+	ListenIp          *string `json:"listenIp,omitempty"`
+	ListenPort        int     `json:"listenPort"`
+	ListenType        string  `json:"listenType"`
+	ErrorLog          *string `json:"errorLog,omitempty"`
+	ReadTimeout       *string `json:"readTimeout"`
+	ReadHeaderTimeout *string `json:"readHeaderTimeout"`
+	WriteTimeout      *string `json:"writeTimeout"`
+	IdleTimeout       *string `json:"idleTimeout"`
 }
 
 // ConfigListen is a part of config.json which describes a Handler
 type ConfigHandler struct {
 	AccessLog         *string           `json:"accessLog,omitempty"`
-	ErrorLog          *string           `json:"errorLog,omitempty"`
-	DialTimeout       *int              `json:"dialTimeout,omitempty"`
-	Htpasswd          *string           `json:"htpasswd,omitempty"`
+	HandleTimeout     *string           `json:"handleTimeout,omitempty"`
+	Htpasswd          *string           `json:"BasicAuth,omitempty"`
 	EnableBasicAuth   *bool             `json:"enableBasicAuth,omitempty"`
 	OutgoingIpV4      *string           `json:"outgoingIpV4,omitempty"`
 	OutgoingIpV6      *string           `json:"outgoingIpV6,omitempty"`

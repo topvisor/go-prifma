@@ -58,7 +58,8 @@ func (t *Logger) Println(v ...interface{}) {
 	}
 }
 
-func (t *Logger) Fatalln(v ...interface{}) {
-	t.Println(v...)
-	os.Exit(1)
+func (t *Logger) Printf(format string, v ...interface{}) {
+	if t.IsInited() {
+		t.logger.Printf(format, v...)
+	}
 }
