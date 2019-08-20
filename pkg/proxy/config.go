@@ -8,7 +8,7 @@ import (
 // ConfigProxy is a part of config.json which describes a Proxy
 type ConfigProxy struct {
 	Url          string            `json:"url"`
-	ProxyHeaders map[string]string `json:"proxyHeaders,omitempty"`
+	ProxyHeaders map[string]string `json:"proxyHeaders"`
 }
 
 // ConfigCondition is a part of config.json which describes a Condition
@@ -19,10 +19,10 @@ type ConfigCondition struct {
 
 // ConfigListen is a part of config.json which describes a Server
 type ConfigListen struct {
-	ListenIp          *string `json:"listenIp,omitempty"`
+	ListenIp          *string `json:"listenIp"`
 	ListenPort        int     `json:"listenPort"`
 	ListenType        string  `json:"listenType"`
-	ErrorLog          *string `json:"errorLog,omitempty"`
+	ErrorLog          *string `json:"errorLog"`
 	ReadTimeout       *string `json:"readTimeout"`
 	ReadHeaderTimeout *string `json:"readHeaderTimeout"`
 	WriteTimeout      *string `json:"writeTimeout"`
@@ -31,16 +31,16 @@ type ConfigListen struct {
 
 // ConfigListen is a part of config.json which describes a Handler
 type ConfigHandler struct {
-	AccessLog         *string           `json:"accessLog,omitempty"`
-	HandleTimeout     *string           `json:"handleTimeout,omitempty"`
-	Htpasswd          *string           `json:"BasicAuth,omitempty"`
-	EnableBasicAuth   *bool             `json:"enableBasicAuth,omitempty"`
-	OutgoingIpV4      *string           `json:"outgoingIpV4,omitempty"`
-	OutgoingIpV6      *string           `json:"outgoingIpV6,omitempty"`
-	EnableUseIpHeader *bool             `json:"enableUseIpHeader,omitempty"`
-	BlockRequests     *bool             `json:"blockRequests,omitempty"`
-	Proxy             *ConfigProxy      `json:"proxy,omitempty"`
-	Conditions        []ConfigCondition `json:"conditions,omitempty"`
+	AccessLog         *string           `json:"accessLog"`
+	HandleTimeout     *string           `json:"handleTimeout"`
+	Htpasswd          *string           `json:"BasicAuth"`
+	EnableBasicAuth   *bool             `json:"enableBasicAuth"`
+	OutgoingIpV4      *string           `json:"outgoingIpV4"`
+	OutgoingIpV6      *string           `json:"outgoingIpV6"`
+	EnableUseIpHeader *bool             `json:"enableUseIpHeader"`
+	BlockRequests     *bool             `json:"blockRequests"`
+	Proxy             *ConfigProxy      `json:"proxy"`
+	Conditions        []ConfigCondition `json:"conditions"`
 }
 
 // ConfigListen is a part of config.json which describes the Server and the base Handler
