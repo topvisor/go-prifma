@@ -33,9 +33,9 @@ func start(configFilename string) error {
 	if err := server.LoadFromConfig(configFilename); err != nil {
 		return err
 	}
-	if !server.Handler.ErrorLogger.IsInited() {
+	if !server.ErrorLogger.IsInited() {
 		errorLogger := log.New(os.Stderr, "", log.LstdFlags)
-		if err := server.Handler.ErrorLogger.SetLogger(errorLogger); err != nil {
+		if err := server.ErrorLogger.SetLogger(errorLogger); err != nil {
 			return err
 		}
 	}
