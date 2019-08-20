@@ -224,7 +224,9 @@ func (t *Handler) serveHTTP(rw http.ResponseWriter, req *http.Request) {
 		ctx, _ = context.WithTimeout(ctx, *t.HandleTimeout)
 	}
 
+	req = req.WithContext(ctx)
 	respWriterChan := make(chan responseWriter)
+
 	go func() {
 		respWriterChan <- t.serveHTTPContext(req)
 		close(respWriterChan)

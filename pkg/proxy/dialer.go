@@ -11,8 +11,6 @@ import (
 type dialer struct {
 	lIpV4 net.IP
 	lIpV6 net.IP
-
-	net.Dialer
 }
 
 // connect connects to the url
@@ -43,9 +41,11 @@ func (t *dialer) connect(url *url.URL) (net.Conn, error) {
 		return nil, err
 	}
 
-	t.LocalAddr = laddr
+	dialer := &net.Dialer{
+		LocalAddr: laddr,
+	}
 
-	return t.Dial("tcp", net.JoinHostPort(host, port))
+	return dialer.Dial("tcp", net.JoinHostPort(host, port))
 }
 
 // selectLAddr select a suitable outgoing ip address depending on a request's destination domain
