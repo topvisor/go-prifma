@@ -1,8 +1,8 @@
 package main
 
 import (
-	"../../pkg/proxy"
 	"encoding/json"
+	"github.com/topvisor/go-proxy-server/pkg/proxy"
 	"log"
 	"os"
 )
