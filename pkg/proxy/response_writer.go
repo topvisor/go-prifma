@@ -11,6 +11,8 @@ import (
 	"time"
 )
 
+const bufferSize = 1024 * 16
+
 type responseContext struct {
 	writer responseWriter
 	ctx    context.Context
@@ -137,7 +139,14 @@ func (t *responseWriteReverseProxy) Write(rw http.ResponseWriter) error {
 }
 
 func transfer(src io.ReadCloser, dst io.WriteCloser) {
-	_, _ = io.Copy(dst, src)
+	buffer := make([]byte, bufferSize)
+
+	for nr, err := src.Read(buffer); err == nil; nr, err = src.Read(buffer) {
+		if nw, err := dst.Write(buffer[:nr]); err != nil || nr != nw {
+			break
+		}
+	}
+
 	_ = src.Close()
 	_ = dst.Close()
 }
