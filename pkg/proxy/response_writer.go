@@ -5,13 +5,10 @@ import (
 	"errors"
 	"fmt"
 	auth "github.com/abbot/go-http-auth"
-	"io"
 	"net"
 	"net/http"
 	"time"
 )
-
-const bufferSize = 1024 * 16
 
 type responseContext struct {
 	writer responseWriter
@@ -136,17 +133,4 @@ func (t *responseWriteReverseProxy) Write(rw http.ResponseWriter) error {
 	t.code = reqData.Response.StatusCode
 
 	return nil
-}
-
-func transfer(src io.ReadCloser, dst io.WriteCloser) {
-	buffer := make([]byte, bufferSize)
-
-	for nr, err := src.Read(buffer); err == nil; nr, err = src.Read(buffer) {
-		if nw, err := dst.Write(buffer[:nr]); err != nil || nr != nw {
-			break
-		}
-	}
-
-	_ = src.Close()
-	_ = dst.Close()
 }
