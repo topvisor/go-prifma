@@ -1,8 +1,8 @@
 package main
 
 import (
+	"../../pkg/proxy"
 	"encoding/json"
-	"go-proxy-server/pkg/proxy"
 	"log"
 	"os"
 )
