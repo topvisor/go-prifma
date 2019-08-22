@@ -1,33 +1,11 @@
 package proxy
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	auth "github.com/abbot/go-http-auth"
 	"net/http"
-	"time"
 )
-
-type responseContext struct {
-	writer responseWriter
-	ctx    context.Context
-	cancel context.CancelFunc
-}
-
-func newResponseTimeout(timeout time.Duration) *responseContext {
-	ctx := context.Background()
-	ctx, cancel := context.WithTimeout(ctx, timeout)
-
-	return &responseContext{
-		ctx:    ctx,
-		cancel: cancel,
-	}
-}
-
-func (t *responseContext) Cancel() {
-	t.cancel()
-}
 
 type responseWriter interface {
 	Write(rw http.ResponseWriter) error
