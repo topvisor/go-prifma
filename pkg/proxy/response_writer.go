@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	auth "github.com/abbot/go-http-auth"
-	"net"
 	"net/http"
 	"time"
 )
@@ -66,37 +65,6 @@ func (t *responseWriteRequireAuth) GetCode() int {
 
 func (t *responseWriteRequireAuth) Write(rw http.ResponseWriter) error {
 	t.BasicAuth.RequireAuth(rw, t.Request)
-
-	return nil
-}
-
-type responseWriterTunnel struct {
-	DestConn net.Conn
-
-	code int
-}
-
-func (t *responseWriterTunnel) GetCode() int {
-	return t.code
-}
-
-func (t *responseWriterTunnel) Write(rw http.ResponseWriter) error {
-	rw.WriteHeader(http.StatusOK)
-	t.code = http.StatusOK
-
-	clientConn, _, hijackError := rw.(http.Hijacker).Hijack()
-	if hijackError != nil {
-		if err := t.DestConn.Close(); err != nil {
-			_ = t.DestConn.Close()
-		}
-
-		http.Error(rw, hijackError.Error(), http.StatusInternalServerError)
-		t.code = http.StatusInternalServerError
-		return hijackError
-	}
-
-	go transfer(clientConn, t.DestConn)
-	go transfer(t.DestConn, clientConn)
 
 	return nil
 }

@@ -50,7 +50,7 @@ type Handler struct {
 	BlockRequests     *bool
 	Proxy             *Proxy
 
-	errorLogger    *Logger
+	server         *Server
 	conditions     map[conditionUniqueKey]*condWithHandler
 	reverseProxies sync.Map
 	nextReqId      uint64
@@ -123,12 +123,12 @@ func (t *Handler) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 	handler.serveHTTP(rw, req)
 }
 
-func (t *Handler) setErrorLogger(errorLogger *Logger) {
-	t.errorLogger = errorLogger
+func (t *Handler) setServer(server *Server) {
+	t.server = server
 
 	if t.conditions != nil {
 		for _, condWithHandler := range t.conditions {
-			condWithHandler.handler.setErrorLogger(errorLogger)
+			condWithHandler.handler.setServer(server)
 		}
 	}
 }
@@ -249,7 +249,7 @@ func (t *Handler) serveHTTP(rw http.ResponseWriter, req *http.Request) {
 		respWriter = &responseWriterError{Code: http.StatusInternalServerError}
 	}
 	if err := respWriter.Write(rw); err != nil {
-		t.errorLogger.Println(err)
+		t.server.ErrorLogger.Println(err)
 	}
 
 	t.AccessLogger.Printf("%s ")
@@ -295,7 +295,11 @@ func (t *Handler) serveTunnel(req *http.Request) responseWriter {
 		}
 	}
 
-	return &responseWriterTunnel{DestConn: destConn}
+	return &responseWriterTunnel{
+		DestConn:     destConn,
+		ReadTimeout:  t.server.ReadTimeout,
+		WriteTimeout: t.server.WriteTimeout,
+	}
 }
 
 func (t *Handler) serveReverseProxy(req *http.Request) responseWriter {

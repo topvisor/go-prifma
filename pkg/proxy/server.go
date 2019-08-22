@@ -124,7 +124,7 @@ func (t *Server) ListenAndServe() error {
 
 	var err error
 
-	t.Handler.setErrorLogger(&t.ErrorLogger)
+	t.Handler.setServer(t)
 
 	ipStr := ""
 	if t.ListenIp != nil {
