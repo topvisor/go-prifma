@@ -172,7 +172,7 @@ func (t *Handler) setFromConfig(config ConfigHandler) error {
 	if config.OutgoingIpV6 != nil {
 		t.OutgoingIpV6 = make([]net.IP, len(config.OutgoingIpV6.Ips))
 		for i, ip := range config.OutgoingIpV6.Ips {
-			if t.OutgoingIpV6[i] = net.ParseIP(ip); t.OutgoingIpV6[i] == nil || strings.Contains(ip, ":") {
+			if t.OutgoingIpV6[i] = net.ParseIP(ip); t.OutgoingIpV6[i] == nil || strings.Contains(ip, ".") {
 				return fmt.Errorf("incorrect outgoing ip v6 address(es): %v", config.OutgoingIpV6)
 			}
 		}
