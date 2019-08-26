@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	auth "github.com/abbot/go-http-auth"
+	"math/rand"
 	"net"
 	"net/http"
 	"net/url"
@@ -44,8 +45,8 @@ type Handler struct {
 	HandleTimeout     *time.Duration
 	BasicAuth         *auth.BasicAuth
 	EnableBasicAuth   *bool
-	OutgoingIpV4      net.IP
-	OutgoingIpV6      net.IP
+	OutgoingIpV4      []net.IP
+	OutgoingIpV6      []net.IP
 	EnableUseIpHeader *bool
 	BlockRequests     *bool
 	Proxy             *Proxy
@@ -161,13 +162,19 @@ func (t *Handler) setFromConfig(config ConfigHandler) error {
 		return errors.New(".BasicAuth must be set")
 	}
 	if config.OutgoingIpV4 != nil {
-		if t.OutgoingIpV4 = net.ParseIP(*config.OutgoingIpV4); t.OutgoingIpV4 == nil || strings.Contains(*config.OutgoingIpV4, ":") {
-			return fmt.Errorf("incorrect outgoing ip v4 address: \"%s\"", *config.OutgoingIpV4)
+		t.OutgoingIpV4 = make([]net.IP, len(config.OutgoingIpV4.Ips))
+		for i, ip := range config.OutgoingIpV4.Ips {
+			if t.OutgoingIpV4[i] = net.ParseIP(ip); t.OutgoingIpV4[i] == nil || strings.Contains(ip, ":") {
+				return fmt.Errorf("incorrect outgoing ip v4 address(es): %v", config.OutgoingIpV4)
+			}
 		}
 	}
 	if config.OutgoingIpV6 != nil {
-		if t.OutgoingIpV6 = net.ParseIP(*config.OutgoingIpV6); t.OutgoingIpV6 == nil || strings.Contains(*config.OutgoingIpV6, ".") {
-			return fmt.Errorf("incorrect outgoing ip v6 address: \"%s\"", *config.OutgoingIpV6)
+		t.OutgoingIpV6 = make([]net.IP, len(config.OutgoingIpV6.Ips))
+		for i, ip := range config.OutgoingIpV6.Ips {
+			if t.OutgoingIpV6[i] = net.ParseIP(ip); t.OutgoingIpV6[i] == nil || strings.Contains(ip, ":") {
+				return fmt.Errorf("incorrect outgoing ip v6 address(es): %v", config.OutgoingIpV6)
+			}
 		}
 	}
 
@@ -327,8 +334,12 @@ func (t *Handler) serveReverseProxy(req *http.Request) responseWriter {
 func (t *Handler) getDialer(req *http.Request) (*dialer, error) {
 	dialer := new(dialer)
 
-	dialer.lIpV4 = t.OutgoingIpV4
-	dialer.lIpV6 = t.OutgoingIpV6
+	if t.OutgoingIpV4 != nil {
+		dialer.lIpV4 = t.OutgoingIpV4[rand.Intn(len(t.OutgoingIpV4))]
+	}
+	if t.OutgoingIpV6 != nil {
+		dialer.lIpV6 = t.OutgoingIpV6[rand.Intn(len(t.OutgoingIpV6))]
+	}
 
 	if t.EnableUseIpHeader != nil && *t.EnableUseIpHeader {
 		if lIpStr := req.Header.Get("Proxy-Use-IpV4"); lIpStr != "" {

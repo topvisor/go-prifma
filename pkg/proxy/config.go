@@ -3,7 +3,53 @@ package proxy
 import (
 	"encoding/json"
 	"os"
+	"reflect"
 )
+
+type ConfigOutgoingIp struct {
+	Ips []string
+}
+
+func (t *ConfigOutgoingIp) UnmarshalJSON(dataBytes []byte) error {
+	var data interface{}
+
+	if err := json.Unmarshal(dataBytes, &data); err != nil {
+		return err
+	}
+
+	switch data.(type) {
+	case string:
+		t.Ips = []string{data.(string)}
+	case []interface{}:
+		t.Ips = make([]string, len(data.([]interface{})))
+		for i, ip := range data.([]interface{}) {
+			if ipStr, ok := ip.(string); ok {
+				t.Ips[i] = ipStr
+			} else {
+				return &json.InvalidUnmarshalError{Type: reflect.TypeOf(t)}
+			}
+		}
+	default:
+		return &json.InvalidUnmarshalError{Type: reflect.TypeOf(t)}
+	}
+
+	return nil
+}
+
+func (t *ConfigOutgoingIp) MarshalJSON() ([]byte, error) {
+	var data interface{}
+
+	switch len(t.Ips) {
+	case 0:
+		data = nil
+	case 1:
+		data = t.Ips[0]
+	default:
+		data = t.Ips
+	}
+
+	return json.Marshal(data)
+}
 
 // ConfigProxy is a part of config.json which describes a Proxy
 type ConfigProxy struct {
@@ -35,8 +81,8 @@ type ConfigHandler struct {
 	HandleTimeout     *string           `json:"handleTimeout"`
 	Htpasswd          *string           `json:"BasicAuth"`
 	EnableBasicAuth   *bool             `json:"enableBasicAuth"`
-	OutgoingIpV4      *string           `json:"outgoingIpV4"`
-	OutgoingIpV6      *string           `json:"outgoingIpV6"`
+	OutgoingIpV4      *ConfigOutgoingIp `json:"outgoingIpV4"`
+	OutgoingIpV6      *ConfigOutgoingIp `json:"outgoingIpV6"`
 	EnableUseIpHeader *bool             `json:"enableUseIpHeader"`
 	BlockRequests     *bool             `json:"blockRequests"`
 	Proxy             *ConfigProxy      `json:"proxy"`
