@@ -16,7 +16,16 @@ type Proxy struct {
 	ProxyHeaders http.Header
 }
 
-func (t *Proxy) setFromConfig(config ConfigProxy) error {
+func NewProxyFromConfig(config ConfigProxy) (*Proxy, error) {
+	p := new(Proxy)
+	if err := p.SetFromConfig(config); err != nil {
+		return nil, err
+	}
+
+	return p, nil
+}
+
+func (t *Proxy) SetFromConfig(config ConfigProxy) error {
 	parserUrl, err := url.ParseRequestURI(config.Url)
 	if err != nil {
 		return err

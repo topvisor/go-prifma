@@ -2,13 +2,68 @@ package proxy
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net"
 	"net/http"
+	"net/http/httptrace"
 	"net/http/httputil"
 	"net/url"
 	"regexp"
 )
+
+type responseWriteReverseProxy struct {
+	Request      *http.Request
+	ReverseProxy *reverseProxy
+
+	lAddr net.Addr
+	rAddr net.Addr
+	code  int
+}
+
+func (t *responseWriteReverseProxy) GetCode() int {
+	return t.code
+}
+
+func (t *responseWriteReverseProxy) GetLAddr() net.Addr {
+	return t.lAddr
+}
+
+func (t *responseWriteReverseProxy) GetRAddr() net.Addr {
+	return t.rAddr
+}
+
+func (t *responseWriteReverseProxy) Write(rw http.ResponseWriter) error {
+	trace := &httptrace.ClientTrace{
+		GotConn: func(info httptrace.GotConnInfo) {
+			t.lAddr = info.Conn.LocalAddr()
+			t.rAddr = info.Conn.RemoteAddr()
+		},
+	}
+	ctx := httptrace.WithClientTrace(t.Request.Context(), trace)
+	req := t.Request.WithContext(ctx)
+
+	t.ReverseProxy.ServeHTTP(rw, req)
+
+	reqIdInterface := req.Context().Value(keyReqId)
+	if reqIdInterface == nil {
+		http.Error(rw, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		t.code = http.StatusInternalServerError
+		return errors.New("request id must not be <nil>")
+	}
+
+	reqId := reqIdInterface.(uint64)
+	reqData, reqDataExists := t.ReverseProxy.RequestData[reqId]
+	if !reqDataExists {
+		http.Error(rw, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		t.code = http.StatusInternalServerError
+		return errors.New("request data not exists")
+	}
+
+	t.code = reqData.Response.StatusCode
+
+	return nil
+}
 
 type reverseProxyRequestData struct {
 	Response *http.Response

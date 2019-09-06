@@ -5,10 +5,12 @@ import (
 	"errors"
 	"fmt"
 	auth "github.com/abbot/go-http-auth"
+	"log"
 	"math/rand"
 	"net"
 	"net/http"
 	"net/url"
+	"os"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -27,12 +29,7 @@ type conditionUniqueKey struct {
 	Value string
 }
 
-const (
-	keyReqId = iota + 413
-	keyCancel
-	keyRespWriter
-	keyError
-)
+const keyReqId = iota + 413
 
 const (
 	StatusClientClosedRequest     = 499
@@ -41,7 +38,7 @@ const (
 
 // Handler
 type Handler struct {
-	AccessLogger      Logger
+	AccessLog         *log.Logger
 	HandleTimeout     *time.Duration
 	BasicAuth         *auth.BasicAuth
 	EnableBasicAuth   *bool
@@ -51,43 +48,21 @@ type Handler struct {
 	BlockRequests     *bool
 	Proxy             *Proxy
 
-	server         *Server
+	server         *server
 	conditions     map[conditionUniqueKey]*condWithHandler
 	reverseProxies sync.Map
 	nextReqId      uint64
 }
 
-func (t *Handler) Close() error {
-	if err := t.AccessLogger.Close(); err != nil {
-		return err
-	}
-
-	if t.conditions != nil {
-		for _, condWithHandler := range t.conditions {
-			if err := condWithHandler.handler.Close(); err != nil {
-				return err
-			}
-		}
-	}
-
-	return nil
-}
-
-func (t *Handler) SetConditionHandler(cond *Condition, handler Handler) error {
+func (t *Handler) SetConditionHandler(cond *Condition, handler Handler) {
 	if t.conditions == nil {
 		t.conditions = make(map[conditionUniqueKey]*condWithHandler)
 	}
 
 	condUniqueKey := conditionUniqueKey{cond.Type, cond.Value}
 
-	if oldCondAndHandler, exists := t.conditions[condUniqueKey]; exists {
-		if err := oldCondAndHandler.handler.Close(); err != nil {
-			return err
-		}
-	}
-
-	if !handler.AccessLogger.IsInited() {
-		handler.AccessLogger = t.AccessLogger
+	if handler.AccessLog == nil {
+		handler.AccessLog = t.AccessLog
 	}
 	if handler.HandleTimeout == nil {
 		handler.HandleTimeout = t.HandleTimeout
@@ -115,8 +90,6 @@ func (t *Handler) SetConditionHandler(cond *Condition, handler Handler) error {
 	}
 
 	t.conditions[condUniqueKey] = &condWithHandler{cond, &handler}
-
-	return nil
 }
 
 func (t *Handler) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
@@ -124,7 +97,7 @@ func (t *Handler) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 	handler.serveHTTP(rw, req)
 }
 
-func (t *Handler) setServer(server *Server) {
+func (t *Handler) setServer(server *server) {
 	t.server = server
 
 	if t.conditions != nil {
@@ -135,12 +108,13 @@ func (t *Handler) setServer(server *Server) {
 }
 
 func (t *Handler) setFromConfig(config ConfigHandler) error {
-	var err error
-
 	if config.AccessLog != nil {
-		if err = t.AccessLogger.SetFile(*config.AccessLog); err != nil {
+		accessLogFile, err := os.Open(*config.AccessLog)
+		if err != nil {
 			return err
 		}
+
+		t.AccessLog = log.New(accessLogFile, "", log.Flags())
 	}
 	if config.HandleTimeout != nil {
 		handleTimeout, err := time.ParseDuration(*config.HandleTimeout)
@@ -183,7 +157,7 @@ func (t *Handler) setFromConfig(config ConfigHandler) error {
 
 	if config.Proxy != nil {
 		t.Proxy = new(Proxy)
-		if err = t.Proxy.setFromConfig(*config.Proxy); err != nil {
+		if err := t.Proxy.SetFromConfig(*config.Proxy); err != nil {
 			return err
 		}
 	}
@@ -199,9 +173,7 @@ func (t *Handler) setFromConfig(config ConfigHandler) error {
 				return err
 			}
 
-			if err = t.SetConditionHandler(condition, handler); err != nil {
-				return nil
-			}
+			t.SetConditionHandler(condition, handler)
 		}
 	}
 
@@ -256,11 +228,24 @@ func (t *Handler) serveHTTP(rw http.ResponseWriter, req *http.Request) {
 		respWriter = &responseWriterError{Code: http.StatusInternalServerError}
 	}
 	if err := respWriter.Write(rw); err != nil {
-		t.server.ErrorLogger.Println(err)
+		t.server.ErrorLog.Println(err)
 	}
 
-	t.AccessLogger.Printf("%s ")
+	if t.AccessLog != nil {
+		var user *string
+		if username, _, ok := req.BasicAuth(); ok {
+			user = &username
+		}
 
+		t.AccessLog.Printf(
+			"%s %d %s %s %v l/%v r/%v\n",
+			req.RemoteAddr,
+			respWriter.GetCode(),
+			req.Method,
+			req.RequestURI,
+			user,
+		)
+	}
 	// ### access log
 }
 

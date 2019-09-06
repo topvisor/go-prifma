@@ -23,6 +23,14 @@ func (t *responseWriterTunnel) GetCode() int {
 	return t.code
 }
 
+func (t *responseWriterTunnel) GetLAddr() net.Addr {
+	return t.DestConn.LocalAddr()
+}
+
+func (t *responseWriterTunnel) GetRAddr() net.Addr {
+	return t.DestConn.RemoteAddr()
+}
+
 func (t *responseWriterTunnel) Write(rw http.ResponseWriter) error {
 	rw.WriteHeader(http.StatusOK)
 	t.code = http.StatusOK

@@ -3,7 +3,6 @@ package main
 import (
 	"encoding/json"
 	"github.com/topvisor/go-proxy-server/pkg/proxy"
-	"log"
 	"os"
 )
 
@@ -29,15 +28,9 @@ func main() {
 }
 
 func start(configFilename string) error {
-	server := new(proxy.Server)
-	if err := server.LoadFromConfig(configFilename); err != nil {
+	server, err := proxy.NewServerFromConfigFile(configFilename)
+	if err != nil {
 		return err
-	}
-	if !server.ErrorLogger.IsInited() {
-		errorLogger := log.New(os.Stderr, "", log.LstdFlags)
-		if err := server.ErrorLogger.SetLogger(errorLogger); err != nil {
-			return err
-		}
 	}
 	if err := server.ListenAndServe(); err != nil {
 		return err

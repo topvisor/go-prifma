@@ -63,7 +63,7 @@ type ConfigCondition struct {
 	Handler   ConfigHandler `json:"handler"`
 }
 
-// ConfigListen is a part of config.json which describes a Server
+// ConfigListen is a part of config.json which describes a server
 type ConfigListen struct {
 	ListenIp          *string `json:"listenIp"`
 	ListenPort        int     `json:"listenPort"`
@@ -89,7 +89,7 @@ type ConfigHandler struct {
 	Conditions        []ConfigCondition `json:"conditions"`
 }
 
-// ConfigListen is a part of config.json which describes the Server and the base Handler
+// ConfigListen is a part of config.json which describes the server and the base Handler
 type Config struct {
 	Listen ConfigListen `json:"server"`
 	ConfigHandler

@@ -1,15 +1,17 @@
 package proxy
 
 import (
-	"errors"
 	"fmt"
 	auth "github.com/abbot/go-http-auth"
+	"net"
 	"net/http"
 )
 
 type responseWriter interface {
 	Write(rw http.ResponseWriter) error
 	GetCode() int
+	GetLAddr() net.Addr
+	GetRAddr() net.Addr
 }
 
 type responseWriterError struct {
@@ -19,6 +21,14 @@ type responseWriterError struct {
 
 func (t *responseWriterError) GetCode() int {
 	return t.Code
+}
+
+func (t *responseWriterError) GetLAddr() net.Addr {
+	return nil
+}
+
+func (t *responseWriterError) GetRAddr() net.Addr {
+	return nil
 }
 
 func (t *responseWriterError) Write(rw http.ResponseWriter) error {
@@ -41,42 +51,16 @@ func (t *responseWriteRequireAuth) GetCode() int {
 	return t.BasicAuth.Headers.UnauthCode
 }
 
-func (t *responseWriteRequireAuth) Write(rw http.ResponseWriter) error {
-	t.BasicAuth.RequireAuth(rw, t.Request)
-
+func (t *responseWriteRequireAuth) GetLAddr() net.Addr {
 	return nil
 }
 
-type responseWriteReverseProxy struct {
-	Request      *http.Request
-	ReverseProxy *reverseProxy
-
-	code int
+func (t *responseWriteRequireAuth) GetRAddr() net.Addr {
+	return nil
 }
 
-func (t *responseWriteReverseProxy) GetCode() int {
-	return t.code
-}
-
-func (t *responseWriteReverseProxy) Write(rw http.ResponseWriter) error {
-	t.ReverseProxy.ServeHTTP(rw, t.Request)
-
-	reqIdInterface := t.Request.Context().Value(keyReqId)
-	if reqIdInterface == nil {
-		http.Error(rw, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-		t.code = http.StatusInternalServerError
-		return errors.New("request id must not be <nil>")
-	}
-
-	reqId := reqIdInterface.(uint64)
-	reqData, reqDataExists := t.ReverseProxy.RequestData[reqId]
-	if !reqDataExists {
-		http.Error(rw, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-		t.code = http.StatusInternalServerError
-		return errors.New("request data not exists")
-	}
-
-	t.code = reqData.Response.StatusCode
+func (t *responseWriteRequireAuth) Write(rw http.ResponseWriter) error {
+	t.BasicAuth.RequireAuth(rw, t.Request)
 
 	return nil
 }
