@@ -114,7 +114,7 @@ func (t *Handler) setFromConfig(config ConfigHandler) error {
 			return err
 		}
 
-		t.AccessLog = log.New(accessLogFile, "", log.Flags())
+		t.AccessLog = log.New(accessLogFile, "", log.Ldate|log.Ltime|log.Lmicroseconds)
 	}
 	if config.HandleTimeout != nil {
 		handleTimeout, err := time.ParseDuration(*config.HandleTimeout)

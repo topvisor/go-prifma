@@ -91,7 +91,7 @@ func (t *ServerBuilder) SetFromConfig(config Config) error {
 			return err
 		}
 
-		errorLog = log.New(errorLogFile, "", log.LstdFlags)
+		errorLog = log.New(errorLogFile, "", log.Ldate|log.Ltime|log.Lmicroseconds)
 	}
 
 	var readTimeout, readHeaderTimeout, writeTimeout, idleTimeout time.Duration
@@ -153,7 +153,7 @@ func (t *ServerBuilder) Build() Server {
 
 	errorLog := t.ErrorLog
 	if errorLog == nil {
-		errorLog = log.New(os.Stderr, "", log.LstdFlags)
+		errorLog = log.New(os.Stderr, "", log.Ldate|log.Ltime|log.Lmicroseconds)
 	}
 
 	s := &server{
