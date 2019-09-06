@@ -244,6 +244,8 @@ func (t *Handler) serveHTTP(rw http.ResponseWriter, req *http.Request) {
 			req.Method,
 			req.RequestURI,
 			user,
+			respWriter.GetLAddr(),
+			respWriter.GetRAddr(),
 		)
 	}
 	// ### access log
