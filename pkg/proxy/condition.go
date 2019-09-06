@@ -89,7 +89,7 @@ func (t *Condition) test(req *http.Request) bool {
 func (t *Condition) getTester() (condition, error) {
 	var err error
 
-	if t.tester != nil {
+	if t.tester == nil {
 		switch t.Type {
 		case ConditionTypeSrcIpCIDR:
 			if t.tester, err = parseConditionSrcIpCIDRFromString(t.Value); err != nil {
