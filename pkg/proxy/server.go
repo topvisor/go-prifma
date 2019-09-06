@@ -86,7 +86,7 @@ func (t *ServerBuilder) SetFromConfig(config Config) error {
 
 	var errorLog *log.Logger
 	if config.Listen.ErrorLog != nil {
-		errorLogFile, err := os.Open(*config.Listen.ErrorLog)
+		errorLogFile, err := os.Create(*config.Listen.ErrorLog)
 		if err != nil {
 			return err
 		}

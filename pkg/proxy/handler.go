@@ -109,7 +109,7 @@ func (t *Handler) setServer(server *server) {
 
 func (t *Handler) setFromConfig(config ConfigHandler) error {
 	if config.AccessLog != nil {
-		accessLogFile, err := os.Open(*config.AccessLog)
+		accessLogFile, err := os.Create(*config.AccessLog)
 		if err != nil {
 			return err
 		}
