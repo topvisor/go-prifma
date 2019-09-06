@@ -272,11 +272,11 @@ func (t *Handler) serveTunnel(req *http.Request) responseWriter {
 	var dialer *dialer
 
 	if dialer, err = t.getDialer(req); err != nil {
-		return &responseWriterError{Code: http.StatusBadGateway}
+		return &responseWriterError{Code: http.StatusBadGateway, Error: err.Error()}
 	}
 	if t.Proxy != nil {
 		if destConn, err = t.Proxy.connect(req, dialer); err != nil {
-			return &responseWriterError{Code: http.StatusBadGateway}
+			return &responseWriterError{Code: http.StatusBadGateway, Error: err.Error()}
 		}
 	}
 	if destConn == nil {
@@ -285,7 +285,7 @@ func (t *Handler) serveTunnel(req *http.Request) responseWriter {
 			destUrl.Host = net.JoinHostPort(req.Host, "443")
 		}
 		if destConn, err = dialer.connect(destUrl); err != nil {
-			return &responseWriterError{Code: http.StatusBadGateway}
+			return &responseWriterError{Code: http.StatusBadGateway, Error: err.Error()}
 		}
 	}
 
@@ -299,7 +299,7 @@ func (t *Handler) serveTunnel(req *http.Request) responseWriter {
 func (t *Handler) serveReverseProxy(req *http.Request) responseWriter {
 	dialer, err := t.getDialer(req)
 	if err != nil {
-		return &responseWriterError{Code: http.StatusBadGateway}
+		return &responseWriterError{Code: http.StatusBadGateway, Error: err.Error()}
 	}
 
 	ipsKey := dialer.ipsString()
