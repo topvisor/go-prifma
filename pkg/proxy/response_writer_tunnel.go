@@ -5,18 +5,22 @@ import (
 	"io"
 	"net"
 	"net/http"
+	"net/url"
 	"time"
 )
 
 const bufferSize = 1024 * 32
 
 type responseWriterTunnel struct {
-	DestConn     net.Conn
+	Dialer       *dialer
+	Proxy        *Proxy
+	Request      *http.Request
 	ReadTimeout  time.Duration
 	WriteTimeout time.Duration
 
-	clientConn net.Conn
-	code       int
+	lAddr net.Addr
+	rAddr net.Addr
+	code  int
 }
 
 func (t *responseWriterTunnel) GetCode() int {
@@ -24,30 +28,53 @@ func (t *responseWriterTunnel) GetCode() int {
 }
 
 func (t *responseWriterTunnel) GetLAddr() net.Addr {
-	return t.DestConn.LocalAddr()
+	return t.lAddr
 }
 
 func (t *responseWriterTunnel) GetRAddr() net.Addr {
-	return t.DestConn.RemoteAddr()
+	return t.rAddr
 }
 
 func (t *responseWriterTunnel) Write(rw http.ResponseWriter) error {
+	var destConn net.Conn
+	var err error
+
+	if t.Proxy != nil {
+		if destConn, err = t.Proxy.connect(t.Request, t.Dialer); err != nil {
+			http.Error(rw, err.Error(), http.StatusBadGateway)
+			t.code = http.StatusBadGateway
+
+			return err
+		}
+	}
+	if destConn == nil {
+		destUrl := &url.URL{Host: t.Request.Host}
+		if destUrl.Port() == "" {
+			destUrl.Host = net.JoinHostPort(t.Request.Host, "443")
+		}
+		if destConn, err = t.Dialer.connect(destUrl); err != nil {
+			http.Error(rw, err.Error(), http.StatusBadGateway)
+			t.code = http.StatusBadGateway
+
+			return err
+		}
+	}
+
 	rw.WriteHeader(http.StatusOK)
 	t.code = http.StatusOK
 
-	clientConn, _, hijackError := rw.(http.Hijacker).Hijack()
-	if hijackError != nil {
-		if err := t.DestConn.Close(); err != nil {
-			_ = t.DestConn.Close()
-		}
+	clientConn, _, err := rw.(http.Hijacker).Hijack()
+	if err != nil {
+		closeFile(destConn)
 
-		http.Error(rw, hijackError.Error(), http.StatusInternalServerError)
+		http.Error(rw, err.Error(), http.StatusInternalServerError)
 		t.code = http.StatusInternalServerError
-		return hijackError
+
+		return err
 	}
 
-	go t.transfer(clientConn, t.DestConn)
-	go t.transfer(t.DestConn, clientConn)
+	go t.transfer(clientConn, destConn)
+	go t.transfer(destConn, clientConn)
 
 	return nil
 }

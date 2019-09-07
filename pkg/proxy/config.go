@@ -78,7 +78,6 @@ type ConfigListen struct {
 // ConfigListen is a part of config.json which describes a Handler
 type ConfigHandler struct {
 	AccessLog         *string           `json:"accessLog"`
-	HandleTimeout     *string           `json:"handleTimeout"`
 	Htpasswd          *string           `json:"BasicAuth"`
 	EnableBasicAuth   *bool             `json:"enableBasicAuth"`
 	OutgoingIpV4      *ConfigOutgoingIp `json:"outgoingIpV4"`

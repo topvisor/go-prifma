@@ -9,12 +9,10 @@ import (
 	"math/rand"
 	"net"
 	"net/http"
-	"net/url"
 	"os"
 	"strings"
 	"sync"
 	"sync/atomic"
-	"time"
 )
 
 // condWithHandler contains the condition by which the handler will be selected
@@ -39,7 +37,6 @@ const (
 // Handler
 type Handler struct {
 	AccessLog         *log.Logger
-	HandleTimeout     *time.Duration
 	BasicAuth         *auth.BasicAuth
 	EnableBasicAuth   *bool
 	OutgoingIpV4      []net.IP
@@ -63,9 +60,6 @@ func (t *Handler) SetConditionHandler(cond *Condition, handler Handler) {
 
 	if handler.AccessLog == nil {
 		handler.AccessLog = t.AccessLog
-	}
-	if handler.HandleTimeout == nil {
-		handler.HandleTimeout = t.HandleTimeout
 	}
 	if handler.BasicAuth == nil {
 		handler.BasicAuth = t.BasicAuth
@@ -115,14 +109,6 @@ func (t *Handler) setFromConfig(config ConfigHandler) error {
 		}
 
 		t.AccessLog = log.New(accessLogFile, "", log.Ldate|log.Ltime|log.Lmicroseconds)
-	}
-	if config.HandleTimeout != nil {
-		handleTimeout, err := time.ParseDuration(*config.HandleTimeout)
-		if err != nil {
-			return err
-		}
-
-		t.HandleTimeout = &handleTimeout
 	}
 	if config.Htpasswd != nil {
 		htpasswd, err := LoadHtpasswd(*config.Htpasswd)
@@ -199,9 +185,6 @@ func (t *Handler) serveHTTP(rw http.ResponseWriter, req *http.Request) {
 
 	ctx := req.Context()
 	ctx = context.WithValue(ctx, keyReqId, reqId)
-	if t.HandleTimeout != nil {
-		ctx, _ = context.WithTimeout(ctx, *t.HandleTimeout)
-	}
 
 	req = req.WithContext(ctx)
 	respWriterChan := make(chan responseWriter)
@@ -217,10 +200,7 @@ func (t *Handler) serveHTTP(rw http.ResponseWriter, req *http.Request) {
 	case <-ctx.Done():
 	}
 
-	switch ctx.Err() {
-	case context.DeadlineExceeded:
-		respWriter = &responseWriterError{Code: http.StatusGatewayTimeout}
-	case context.Canceled:
+	if ctx.Err() != nil {
 		respWriter = &responseWriterError{Code: StatusClientClosedRequest, Error: StatusTextClientClosedRequest}
 	}
 
@@ -270,30 +250,15 @@ func (t *Handler) serveHTTPContext(req *http.Request) responseWriter {
 }
 
 func (t *Handler) serveTunnel(req *http.Request) responseWriter {
-	var destConn net.Conn
-	var err error
-	var dialer *dialer
-
-	if dialer, err = t.getDialer(req); err != nil {
+	dialer, err := t.getDialer(req)
+	if err != nil {
 		return &responseWriterError{Code: http.StatusBadGateway, Error: err.Error()}
-	}
-	if t.Proxy != nil {
-		if destConn, err = t.Proxy.connect(req, dialer); err != nil {
-			return &responseWriterError{Code: http.StatusBadGateway, Error: err.Error()}
-		}
-	}
-	if destConn == nil {
-		destUrl := &url.URL{Host: req.Host}
-		if destUrl.Port() == "" {
-			destUrl.Host = net.JoinHostPort(req.Host, "443")
-		}
-		if destConn, err = dialer.connect(destUrl); err != nil {
-			return &responseWriterError{Code: http.StatusBadGateway, Error: err.Error()}
-		}
 	}
 
 	return &responseWriterTunnel{
-		DestConn:     destConn,
+		Dialer:       dialer,
+		Proxy:        t.Proxy,
+		Request:      req,
 		ReadTimeout:  t.server.ReadTimeout,
 		WriteTimeout: t.server.WriteTimeout,
 	}
