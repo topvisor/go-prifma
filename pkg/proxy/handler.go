@@ -211,17 +211,19 @@ func (t *Handler) serveHTTP(rw http.ResponseWriter, req *http.Request) {
 		t.server.ErrorLog.Println(err)
 	}
 
-	if t.AccessLog != nil {
-		var user *string
-		if username, _, ok := req.BasicAuth(); ok {
-			user = &username
-		}
-
-		t.accessLogPrint(req, respWriter.GetCode(), user, respWriter.GetLAddr(), respWriter.GetRAddr())
-	}
+	t.accessLogPrint(req, respWriter.GetCode(), respWriter.GetLAddr(), respWriter.GetRAddr())
 }
 
-func (t *Handler) accessLogPrint(req *http.Request, respCode int, user *string, lAddr net.Addr, rAddr net.Addr) {
+func (t *Handler) accessLogPrint(req *http.Request, respCode int, lAddr net.Addr, rAddr net.Addr) {
+	if t.AccessLog == nil {
+		return
+	}
+
+	var user *string
+	if username, _, ok := proxyBasicAuth(req); ok {
+		user = &username
+	}
+
 	t.AccessLog.Printf(
 		"%s %d %s %s %v l/%v r/%v\n",
 		req.RemoteAddr,
