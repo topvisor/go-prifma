@@ -235,9 +235,15 @@ func (t *Handler) accessLogPrint(req *http.Request, respCode int, user *string, 
 }
 
 func (t *Handler) serveHTTPContext(req *http.Request) responseWriter {
-	if t.EnableBasicAuth != nil && *t.EnableBasicAuth && t.BasicAuth != nil && t.BasicAuth.CheckAuth(req) == "" {
-		return &responseWriteRequireAuth{req, t.BasicAuth}
+	if t.EnableBasicAuth != nil && *t.EnableBasicAuth && t.BasicAuth != nil {
+		user, pass, _ := proxyBasicAuth(req)
+		secret := t.BasicAuth.Secrets(user, t.BasicAuth.Realm)
+
+		if !auth.CheckSecret(pass, secret) {
+			return &responseWriteRequireAuth{req, t.BasicAuth}
+		}
 	}
+
 	if t.BlockRequests != nil && *t.BlockRequests {
 		return &responseWriterError{Code: http.StatusLocked}
 	}
