@@ -146,7 +146,6 @@ func (t *reverseProxy) errorHandler(rw http.ResponseWriter, req *http.Request, e
 		http.Error(rw, StatusTextClientClosedRequest, StatusClientClosedRequest)
 		t.RequestData[reqId].Response.StatusCode = StatusClientClosedRequest
 		t.RequestData[reqId].Error = fmt.Errorf("%d, %s", StatusClientClosedRequest, StatusTextClientClosedRequest)
-		// ###
 	}
 }
 

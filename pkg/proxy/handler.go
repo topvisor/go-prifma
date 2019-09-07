@@ -237,18 +237,21 @@ func (t *Handler) serveHTTP(rw http.ResponseWriter, req *http.Request) {
 			user = &username
 		}
 
-		t.AccessLog.Printf(
-			"%s %d %s %s %v l/%v r/%v\n",
-			req.RemoteAddr,
-			respWriter.GetCode(),
-			req.Method,
-			req.RequestURI,
-			user,
-			respWriter.GetLAddr(),
-			respWriter.GetRAddr(),
-		)
+		t.accessLogPrint(req, respWriter.GetCode(), user, respWriter.GetLAddr(), respWriter.GetRAddr())
 	}
-	// ### access log
+}
+
+func (t *Handler) accessLogPrint(req *http.Request, respCode int, user *string, lAddr net.Addr, rAddr net.Addr) {
+	t.AccessLog.Printf(
+		"%s %d %s %s %v l/%v r/%v\n",
+		req.RemoteAddr,
+		respCode,
+		req.Method,
+		req.RequestURI,
+		user,
+		lAddr,
+		rAddr,
+	)
 }
 
 func (t *Handler) serveHTTPContext(req *http.Request) responseWriter {
