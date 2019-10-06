@@ -9,6 +9,7 @@ import (
 	"math/rand"
 	"net"
 	"net/http"
+	"net/http/httputil"
 	"os"
 	"strings"
 	"sync"
@@ -37,6 +38,7 @@ const (
 // Handler
 type Handler struct {
 	AccessLog         *log.Logger
+	DumpLog           *log.Logger
 	BasicAuth         *auth.BasicAuth
 	EnableBasicAuth   *bool
 	OutgoingIpV4      []net.IP
@@ -60,6 +62,9 @@ func (t *Handler) SetConditionHandler(cond *Condition, handler Handler) {
 
 	if handler.AccessLog == nil {
 		handler.AccessLog = t.AccessLog
+	}
+	if handler.DumpLog == nil {
+		handler.DumpLog = t.DumpLog
 	}
 	if handler.BasicAuth == nil {
 		handler.BasicAuth = t.BasicAuth
@@ -109,6 +114,14 @@ func (t *Handler) setFromConfig(config ConfigHandler) error {
 		}
 
 		t.AccessLog = log.New(accessLogFile, "", log.Ldate|log.Ltime|log.Lmicroseconds)
+	}
+	if config.DumpLog != nil {
+		accessLogFile, err := os.Create(*config.DumpLog)
+		if err != nil {
+			return err
+		}
+
+		t.DumpLog = log.New(accessLogFile, "", log.Ldate|log.Ltime|log.Lmicroseconds)
 	}
 	if config.Htpasswd != nil {
 		htpasswd, err := LoadHtpasswd(*config.Htpasswd)
@@ -182,6 +195,16 @@ func (t *Handler) getHandler(req *http.Request) *Handler {
 
 func (t *Handler) serveHTTP(rw http.ResponseWriter, req *http.Request) {
 	reqId := atomic.AddUint64(&t.nextReqId, 1)
+
+	if t.DumpLog != nil {
+		dump, err := httputil.DumpRequest(req, true)
+		if err != nil {
+			t.server.ErrorLog.Println(err)
+			return
+		}
+
+		t.DumpLog.Println(dump)
+	}
 
 	ctx := req.Context()
 	ctx = context.WithValue(ctx, keyReqId, reqId)
