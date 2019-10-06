@@ -203,7 +203,7 @@ func (t *Handler) serveHTTP(rw http.ResponseWriter, req *http.Request) {
 			return
 		}
 
-		t.DumpLog.Println(dump)
+		t.DumpLog.Println(string(dump))
 	}
 
 	ctx := req.Context()
