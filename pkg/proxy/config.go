@@ -79,7 +79,7 @@ type ConfigListen struct {
 type ConfigHandler struct {
 	AccessLog         *string           `json:"accessLog"`
 	DumpLog           *string           `json:"dumpLog"`
-	Htpasswd          *string           `json:"BasicAuth"`
+	Htpasswd          *string           `json:"htpasswd"`
 	EnableBasicAuth   *bool             `json:"enableBasicAuth"`
 	OutgoingIpV4      *ConfigOutgoingIp `json:"outgoingIpV4"`
 	OutgoingIpV6      *ConfigOutgoingIp `json:"outgoingIpV6"`
