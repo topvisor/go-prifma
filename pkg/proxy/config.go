@@ -2,7 +2,7 @@ package proxy
 
 import (
 	"encoding/json"
-	"os"
+	"github.com/topvisor/go-proxy-server/pkg/conf"
 	"reflect"
 )
 
@@ -53,75 +53,194 @@ func (t *ConfigOutgoingIp) MarshalJSON() ([]byte, error) {
 
 // ConfigProxy is a part of config.json which describes a Proxy
 type ConfigProxy struct {
-	Url          string            `json:"url"`
-	ProxyHeaders map[string]string `json:"proxyHeaders"`
+	Url          string
+	ProxyHeaders map[string]string
+}
+
+func (t *ConfigProxy) Call(name string, args ...string) error {
+	if name != "header" || len(args) != 2 {
+		return NewErrWrongCall(name, args)
+	}
+	if t.ProxyHeaders == nil {
+		t.ProxyHeaders = make(map[string]string)
+	}
+
+	t.ProxyHeaders[args[0]] = t.ProxyHeaders[args[1]]
+
+	return nil
+}
+
+func (t *ConfigProxy) CallBlock(name string, args ...string) (conf.Block, error) {
+	return nil, NewErrWrongCall(name, args)
 }
 
 // ConfigCondition is a part of config.json which describes a Condition
 type ConfigCondition struct {
-	Condition string        `json:"condition"`
-	Handler   ConfigHandler `json:"handler"`
+	Key   string
+	Type  string
+	Value string
 }
 
 // ConfigListen is a part of config.json which describes a server
 type ConfigListen struct {
-	ListenIp          *string `json:"listenIp"`
-	ListenPort        int     `json:"listenPort"`
-	ListenType        string  `json:"listenType"`
-	ErrorLog          *string `json:"errorLog"`
-	ReadTimeout       *string `json:"readTimeout"`
-	ReadHeaderTimeout *string `json:"readHeaderTimeout"`
-	WriteTimeout      *string `json:"writeTimeout"`
-	IdleTimeout       *string `json:"idleTimeout"`
+	ListenIp          string
+	ListenPort        string
+	ListenType        string
+	ErrorLog          string
+	ReadTimeout       string
+	ReadHeaderTimeout string
+	WriteTimeout      string
+	IdleTimeout       string
+}
+
+func (t *ConfigListen) Call(name string, args ...string) error {
+	if len(args) != 1 {
+		return NewErrWrongCall(name, args)
+	}
+
+	switch name {
+	case "listen_ip":
+		t.ListenIp = args[0]
+	case "listen_port":
+		t.ListenPort = args[0]
+	case "listen_type":
+		t.ListenType = args[0]
+	case "error_log":
+		t.ErrorLog = args[0]
+	case "read_timeout":
+		t.ReadTimeout = args[0]
+	case "read_header_timeout":
+		t.ReadHeaderTimeout = args[0]
+	case "write_timeout":
+		t.WriteTimeout = args[0]
+	case "idle_timeout":
+		t.IdleTimeout = args[0]
+	default:
+		return NewErrWrongCall(name, args)
+	}
+
+	return nil
+}
+
+func (t *ConfigListen) CallBlock(name string, args ...string) (conf.Block, error) {
+	return nil, NewErrWrongCall(name, args)
 }
 
 // ConfigListen is a part of config.json which describes a Handler
 type ConfigHandler struct {
-	AccessLog         *string           `json:"accessLog"`
-	DumpLog           *string           `json:"dumpLog"`
-	Htpasswd          *string           `json:"htpasswd"`
-	EnableBasicAuth   *bool             `json:"enableBasicAuth"`
-	OutgoingIpV4      *ConfigOutgoingIp `json:"outgoingIpV4"`
-	OutgoingIpV6      *ConfigOutgoingIp `json:"outgoingIpV6"`
-	EnableUseIpHeader *bool             `json:"enableUseIpHeader"`
-	BlockRequests     *bool             `json:"blockRequests"`
-	Proxy             *ConfigProxy      `json:"proxy"`
-	Conditions        []ConfigCondition `json:"conditions"`
+	Condition           *ConfigCondition
+	AccessLog           string
+	DumpLog             string
+	BasicAuth           string
+	OutgoingIpV4        []string
+	OutgoingIpV6        []string
+	EnableUseIpHeader   bool
+	EnableBlockRequests bool
+	Proxy               *ConfigProxy
+	Handlers            []*ConfigHandler
+}
+
+func (t *ConfigHandler) Call(name string, args ...string) error {
+	switch name {
+	case "outgoing_ip_v4":
+		t.OutgoingIpV4 = args
+	case "outgoing_ip_v6":
+		t.OutgoingIpV6 = args
+	default:
+		switch len(args) {
+		case 0:
+			switch name {
+			case "enable_use_ip_header":
+				t.EnableUseIpHeader = true
+			case "disable_use_ip_header":
+				t.EnableUseIpHeader = false
+			case "enable_block_requests":
+				t.EnableBlockRequests = true
+			case "disable_block_requests":
+				t.EnableBlockRequests = false
+			case "disable_proxy_requests":
+				t.Proxy = nil
+			default:
+				return NewErrWrongCall(name, args)
+			}
+		case 1:
+			switch name {
+			case "access_log":
+				t.AccessLog = args[0]
+			case "dump_log":
+				t.DumpLog = args[0]
+			case "basic_auth":
+				t.BasicAuth = args[0]
+			case "enable_proxy_requests":
+				t.Proxy = &ConfigProxy{
+					Url: args[0],
+				}
+			default:
+				return NewErrWrongCall(name, args)
+			}
+		default:
+			return NewErrWrongCall(name, args)
+		}
+	}
+
+	return nil
+}
+
+func (t *ConfigHandler) CallBlock(name string, args ...string) (conf.Block, error) {
+	switch name {
+	case "condition":
+		if len(args) != 3 {
+			return nil, NewErrWrongCall(name, args)
+		}
+
+		handler := *t
+		handler.Condition = &ConfigCondition{
+			Key:   args[0],
+			Type:  args[1],
+			Value: args[2],
+		}
+
+		if t.Handlers == nil {
+			t.Handlers = []*ConfigHandler{&handler}
+		} else {
+			t.Handlers = append(t.Handlers, &handler)
+		}
+
+		return &handler, nil
+	case "enable_proxy_requests":
+		if len(args) != 1 {
+			return nil, NewErrWrongCall(name, args)
+		}
+
+		t.Proxy = &ConfigProxy{
+			Url: args[0],
+		}
+
+		return t.Proxy, nil
+	default:
+		return nil, NewErrWrongCall(name, args)
+	}
 }
 
 // ConfigListen is a part of config.json which describes the server and the base Handler
 type Config struct {
-	Listen ConfigListen `json:"server"`
+	Listen *ConfigListen
 	ConfigHandler
 }
 
-// ParseConfig parses a config from the json string
-func ParseConfig(jsonStr string) (*Config, error) {
-	config := new(Config)
-	if err := json.Unmarshal([]byte(jsonStr), config); err != nil {
-		return nil, err
-	}
+// ParseConfig parses a config from the file
+func ParseConfig(filename string) (*Config, error) {
+	t := new(Config)
 
-	return config, nil
+	return t, conf.DefaultDecoder.Decode(t, filename)
 }
 
-// ParseConfigFromFile parses a config from the file
-func ParseConfigFromFile(filename string) (*Config, error) {
-	file, err := os.Open(filename)
-	if err != nil {
-		return nil, err
+func (t *Config) CallBlock(name string, args ...string) (conf.Block, error) {
+	if name != "server" || len(args) != 0 {
+		return nil, NewErrWrongCall(name, args)
 	}
 
-	config := new(Config)
-	decoder := json.NewDecoder(file)
-	if err = decoder.Decode(config); err != nil {
-		return nil, err
-	}
+	t.Listen = new(ConfigListen)
 
-	err = file.Close()
-	if err != nil {
-		return nil, err
-	}
-
-	return config, nil
+	return t.Listen, nil
 }

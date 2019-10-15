@@ -34,15 +34,18 @@ func (t *Decoder) Decode(base Block, globs ...string) error {
 			}
 		}
 	}
+
+	return nil
 }
 
 func (t *Decoder) decode(base Block, filename string) error {
 	file, err := os.Open(filename)
-
 	if err != nil {
 		return err
 	}
 	defer file.Close()
+
+	handler := t.TokenHandlerFactory(base, t)
 
 	scanner := bufio.NewScanner(file)
 	scanner.Split(t.split)
@@ -53,9 +56,13 @@ func (t *Decoder) decode(base Block, filename string) error {
 			continue
 		}
 		for _, token := range tokens {
-
+			if err := handler.Handle(token); err != nil {
+				return err
+			}
 		}
 	}
+
+	return nil
 }
 
 func (t *Decoder) split(data []byte, atEOF bool) (advance int, token []byte, err error) {
