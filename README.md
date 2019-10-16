@@ -22,7 +22,7 @@ $GOPATH/bin/prifma --config /path/to/config.conf
 
 * *Syntax*: **include** *glob* ...;
 * *Default*: &ndash;     
-* *Context*: *                  
+* *Context*: *         
 
 ## server
 Настройки сервера
@@ -55,8 +55,8 @@ $GOPATH/bin/prifma --config /path/to/config.conf
 #### error_log
 Лог ошибок
 
-* *Syntax*: **error_log** *path*;
-* *Default*: &ndash;  
+* *Syntax*: **error_log** *path* | off;
+* *Default*: error_log off;
 * *Context*: server
 
 #### read_timeout
@@ -86,3 +86,85 @@ $GOPATH/bin/prifma --config /path/to/config.conf
 * *Syntax*: **idle_timeout** *time*;
 * *Default*: idle_timeout 0s;  
 * *Context*: server
+
+## main
+
+#### access_log
+Лог запросов
+
+* *Syntax*: **access_log** *path* | off;
+* *Default*: access_log off; 
+* *Context*: main, condition
+
+#### dump_log
+Расширенный лог запросов (для отладки)
+
+* *Syntax*: **dump_log** *path* | off;
+* *Default*: dump_log off;  
+* *Context*: main, condition
+
+#### basic_auth
+"Basic" HTTP Authentication. Для включения требуется указать путь к файлу `htpasswd`
+
+* *Syntax*: **basic_auth** *path* | off;
+* *Default*: basic_auth off;  
+* *Context*: main, condition
+
+#### outgoing_ip_v4
+IpV4 используемые prifma для запросов (случайный ip из списка)
+
+* *Syntax*: **outgoing_ip_v4** *ip*... | off;
+* *Default*: outgoing_ip_v4 0.0.0.0;  
+* *Context*: main, condition
+
+#### outgoing_ip_v6
+IpV6 используемые prifma для запросов (случайный ip из списка)
+
+* *Syntax*: **outgoing_ip_v6** *ip*... | off;
+* *Default*: outgoing_ip_v6 ::0;  
+* *Context*: main, condition
+
+#### use_ip_header
+Установить ip адрес для запроса исходя из переданных заголовков `Proxy-Use-IpV4` и `Proxy-Use-IpV6`
+
+* *Syntax*: **use_ip_header** on | off;
+* *Default*: use_ip_header off;  
+* *Context*: main, condition
+
+#### block_requests
+Заблокировать входящие запросы (`423 Locked`)
+
+* *Syntax*: **block_requests** on | off;
+* *Default*: block_requests off;  
+* *Context*: main, condition
+
+## proxy_requests
+Отправить исходящие запросы через прокси
+
+* *Syntax*: **proxy_requests** *url* { ... } | *url*; | off;
+* *Default*: proxy_requests off;  
+* *Context*: main, condition
+
+#### proxy_header
+Установить заголовок, при отправке запроса через прокси указанный в `proxy_requests`
+
+* *Syntax*: **proxy_header** *key* *val*;
+* *Default*: &ndash; 
+* *Context*: proxy_requests
+
+## condition
+Применить директивы при выполнении условия.
+
+* *Syntax*: **condition** *key* *type* *val*;
+* *Default*: &ndash; 
+* *Context*: proxy_requests
+
+##### key
+* `src_ip` - ip клиента
+* `dst_domain` - домен, к которому будет выполнен исходящий запрос
+* `header_*` - заголовок входящего запроса (например `header_user_agent`, `header_cookie`)
+
+##### type 
+* `=` - равенство
+* `~` - регулярное выражение
+* `cidr` - маска в формате cidr
