@@ -236,7 +236,7 @@ func ParseConfig(filename string) (*Config, error) {
 }
 
 func (t *Config) CallBlock(name string, args ...string) (conf.Block, error) {
-	if name != "server" || len(args) != 0 {
+	if name != "server" || len(args) != 0 || t.Listen != nil {
 		return nil, NewErrWrongCall(name, args)
 	}
 
