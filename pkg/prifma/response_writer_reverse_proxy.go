@@ -1,4 +1,4 @@
-package proxy
+package prifma
 
 import (
 	"context"
@@ -149,7 +149,7 @@ func (t *reverseProxy) errorHandler(rw http.ResponseWriter, req *http.Request, e
 	}
 }
 
-var proxyHeadersRegexp, _ = regexp.Compile("^(?i)proxy-")
+var proxyHeadersRegexp, _ = regexp.Compile("^(?i)prifma-")
 
 func removeProxyHeaders(req *http.Request) {
 	for key := range req.Header {

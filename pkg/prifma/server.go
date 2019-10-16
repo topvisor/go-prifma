@@ -1,4 +1,4 @@
-package proxy
+package prifma
 
 import (
 	"context"
@@ -65,8 +65,6 @@ type ServerBuilder struct {
 	WriteTimeout      time.Duration
 	IdleTimeout       time.Duration
 	Handler           Handler
-
-	errorLoggerCloser io.Closer
 }
 
 func (t *ServerBuilder) SetFromConfig(config Config) error {

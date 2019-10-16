@@ -1,4 +1,4 @@
-package proxy
+package prifma_new
 
 import (
 	"context"
@@ -10,9 +10,9 @@ import (
 	"time"
 )
 
-const closeTimeout = time.Second * 2
+const CloseTimeout = time.Second * 2
 
-func contextWithTimeout(timeout time.Duration) (context.Context, context.CancelFunc) {
+func ContextWithTimeout(timeout time.Duration) (context.Context, context.CancelFunc) {
 	ctx := context.Background()
 	if timeout > 0 {
 		return context.WithTimeout(ctx, timeout)
@@ -21,14 +21,14 @@ func contextWithTimeout(timeout time.Duration) (context.Context, context.CancelF
 	}
 }
 
-func closeFile(closer io.Closer) {
+func CloseFile(closer io.Closer) {
 	if err := closer.Close(); err != nil && err != os.ErrClosed && err != os.ErrNotExist {
-		time.Sleep(closeTimeout)
+		time.Sleep(CloseTimeout)
 		_ = closer.Close()
 	}
 }
 
-func proxyBasicAuth(req *http.Request) (username, password string, ok bool) {
+func ProxyBasicAuth(req *http.Request) (username, password string, ok bool) {
 	auth := req.Header.Get("Proxy-Authorization")
 	if auth == "" {
 		return

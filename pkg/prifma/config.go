@@ -1,4 +1,4 @@
-package proxy
+package prifma
 
 import (
 	"encoding/json"
@@ -81,7 +81,7 @@ type ConfigCondition struct {
 	Value string
 }
 
-// ConfigListen is a part of config.json which describes a server
+// ConfigListen is a part of config.json which describes a prifma
 type ConfigListen struct {
 	ListenIp          string
 	ListenPort        string
@@ -222,7 +222,7 @@ func (t *ConfigHandler) CallBlock(name string, args ...string) (conf.Block, erro
 	}
 }
 
-// ConfigListen is a part of config.json which describes the server and the base Handler
+// ConfigListen is a part of config.json which describes the prifma and the base Handler
 type Config struct {
 	Listen *ConfigListen
 	ConfigHandler
@@ -236,7 +236,7 @@ func ParseConfig(filename string) (*Config, error) {
 }
 
 func (t *Config) CallBlock(name string, args ...string) (conf.Block, error) {
-	if name != "server" || len(args) != 0 || t.Listen != nil {
+	if name != "prifma" || len(args) != 0 || t.Listen != nil {
 		return nil, NewErrWrongCall(name, args)
 	}
 

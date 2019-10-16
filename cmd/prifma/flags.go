@@ -8,7 +8,7 @@ import (
 const (
 	configFlag      = "config"
 	configFlagShort = "c"
-	configDefault   = "./config.json"
+	configDefault   = "./config.conf"
 	configUsage     = "Set path to config.json"
 
 	helpFlag      = "help"
@@ -19,9 +19,7 @@ const (
 
 type flags struct {
 	config string
-	init   bool
 	help   bool
-	listen bool
 
 	flag.FlagSet
 }

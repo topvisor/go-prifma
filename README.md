@@ -55,7 +55,7 @@ $GOPATH/bin/prifma --config /path/to/config.conf
 #### error_log
 Лог ошибок
 
-* *Syntax*: **error_log** *path* | off;
+* *Syntax*: **error_log** *path*;
 * *Default*: error_log off;
 * *Context*: server
 
