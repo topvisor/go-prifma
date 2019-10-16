@@ -12,7 +12,7 @@ import (
 )
 
 type Server interface {
-	GetModules() []Module
+	GetModulesManager() ModulesManager
 	GetListenIp() net.IP
 	GetListenPort() int
 	GetListenType() ListenType
@@ -22,7 +22,6 @@ type Server interface {
 	GetWriteTimeout() time.Duration
 	GetIdleTimeout() time.Duration
 
-	SetHandlers(handlers []Module)
 	SetListenIp(ip string) error
 	SetListenPort(port string) error
 	SetListenType(typ string) error
@@ -36,11 +35,11 @@ type Server interface {
 	ListenAndServe() error
 }
 
-func NewServer(modules []Module) Server {
+func NewServer(modules ...Module) Server {
 	t := &DefaultServer{
-		Modules:    modules,
-		ListenType: ListenTypeHttp,
-		ErrorLog:   log.New(os.Stderr, "", log.Ldate|log.Ltime|log.Lmicroseconds),
+		ModulesManager: NewModulesManager(modules...),
+		ListenType:     ListenTypeHttp,
+		ErrorLog:       log.New(os.Stderr, "", log.Ldate|log.Ltime|log.Lmicroseconds),
 	}
 
 	t.Config = NewConfigMain(t)
@@ -51,15 +50,15 @@ func NewServer(modules []Module) Server {
 }
 
 type DefaultServer struct {
-	Modules    []Module
-	ListenType ListenType
-	ErrorLog   *log.Logger
-	Config     conf.Block
-	Server     http.Server
+	ModulesManager ModulesManager
+	ListenType     ListenType
+	ErrorLog       *log.Logger
+	Config         conf.Block
+	Server         http.Server
 }
 
-func (t *DefaultServer) GetModules() []Module {
-	return t.Modules
+func (t *DefaultServer) GetModulesManager() ModulesManager {
+	return t.ModulesManager
 }
 
 func (t *DefaultServer) GetListenIp() net.IP {
@@ -98,10 +97,6 @@ func (t *DefaultServer) GetWriteTimeout() time.Duration {
 
 func (t *DefaultServer) GetIdleTimeout() time.Duration {
 	return t.Server.IdleTimeout
-}
-
-func (t *DefaultServer) SetHandlers(handlers []Module) {
-	t.Modules = handlers
 }
 
 func (t *DefaultServer) SetListenIp(ip string) error {

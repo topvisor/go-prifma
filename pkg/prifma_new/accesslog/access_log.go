@@ -56,6 +56,12 @@ func (t *AccessLog) AfterWriteResponse(req *http.Request, resp prifma_new.Respon
 	return nil
 }
 
+func (t *AccessLog) Clone() prifma_new.Module {
+	clone := *t
+
+	return &clone
+}
+
 func (t *AccessLog) Call(command conf.Command) error {
 	if command.GetName() != "access_log" {
 		return prifma_new.NewErrModuleDirectiveNotFound(command)

@@ -49,6 +49,12 @@ func (t *DumpLog) SetFilename(filename string) error {
 	return nil
 }
 
+func (t *DumpLog) Clone() prifma_new.Module {
+	clone := *t
+
+	return &clone
+}
+
 func (t *DumpLog) Call(command conf.Command) error {
 	if command.GetName() != "dump_log" {
 		return prifma_new.NewErrModuleDirectiveNotFound(command)

@@ -6,6 +6,8 @@ import (
 )
 
 type Module interface {
+	Clone() Module
+
 	conf.Block
 }
 

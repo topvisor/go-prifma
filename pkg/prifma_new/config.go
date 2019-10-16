@@ -101,6 +101,13 @@ func (t *ConfigModule) Call(command conf.Command) error {
 }
 
 func (t *ConfigModule) CallBlock(command conf.Command) (conf.Block, error) {
+	if command.GetName() == "condition" {
+		if len(command.GetArgs()) != 3 {
+			return nil, NewErrWrongDirective(command)
+		}
+
+	}
+
 	for _, module := range t.Server.GetModules() {
 		if block, err := module.CallBlock(command); err != nil {
 			if _, ok := err.(*ErrModuleDirectiveNotFound); !ok {
