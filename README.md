@@ -155,7 +155,7 @@ IpV6 используемые prifma для запросов (случайный
 ## condition
 Применить директивы при выполнении условия.
 
-* *Syntax*: **condition** *key* *type* *val*;
+* *Syntax*: **condition** *key* *type* *val* { ... }
 * *Default*: &ndash; 
 * *Context*: proxy_requests
 
