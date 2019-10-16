@@ -2,7 +2,7 @@ package main
 
 import (
 	"encoding/json"
-	"github.com/topvisor/go-proxy-server/pkg/proxy"
+	"github.com/topvisor/prifma/pkg/proxy"
 	"os"
 )
 
