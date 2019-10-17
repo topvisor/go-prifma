@@ -41,7 +41,7 @@ func NewConfigServer(server Server) conf.Block {
 
 func (t *ConfigServer) Call(command conf.Command) error {
 	if len(command.GetArgs()) != 1 {
-		return conf.NewCommandError(command)
+		return conf.NewErrCommand(command)
 	}
 
 	arg := command.GetArgs()[0]
@@ -65,12 +65,12 @@ func (t *ConfigServer) Call(command conf.Command) error {
 		return t.Server.SetIdleTimeout(arg)
 	}
 
-	return conf.NewCommandError(command)
+	return conf.NewErrCommand(command)
 }
 
 func (t *ConfigServer) CallBlock(command conf.Command) (conf.Block, error) {
 	if command.GetName() != "server" || len(command.GetArgs()) != 0 {
-		return nil, conf.NewCommandError(command)
+		return nil, conf.NewErrCommand(command)
 	}
 
 	return t, nil
@@ -91,7 +91,7 @@ func NewConfigModule(server Server) conf.Block {
 func (t *ConfigModule) Call(command conf.Command) error {
 	module := t.Server.GetModulesManager().GetModules(t.Conds...)[command.GetName()]
 	if module == nil {
-		return conf.NewCommandError(command)
+		return conf.NewErrCommand(command)
 	}
 
 	return module.Call(command)
@@ -104,7 +104,7 @@ func (t *ConfigModule) CallBlock(command conf.Command) (conf.Block, error) {
 
 	module := t.Server.GetModulesManager().GetModules(t.Conds...)[command.GetName()]
 	if module == nil {
-		return nil, conf.NewCommandError(command)
+		return nil, conf.NewErrCommand(command)
 	}
 
 	return module.CallBlock(command)
@@ -113,7 +113,7 @@ func (t *ConfigModule) CallBlock(command conf.Command) (conf.Block, error) {
 func (t *ConfigModule) CallCondition(command conf.Command) (conf.Block, error) {
 	args := command.GetArgs()
 	if len(args) != 3 {
-		return nil, conf.NewCommandError(command)
+		return nil, conf.NewErrCommand(command)
 	}
 
 	cond, err := NewCondition(args[0], args[1], args[2])

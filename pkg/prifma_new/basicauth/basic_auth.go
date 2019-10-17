@@ -18,9 +18,7 @@ type BasicAuth struct {
 }
 
 func New() prifma_new.Module {
-	t := new(BasicAuth)
-
-	return t
+	return new(BasicAuth)
 }
 
 func (t *BasicAuth) HandleRequest(req *http.Request) (*http.Request, prifma_new.Response, error) {
@@ -79,7 +77,7 @@ func (t *BasicAuth) Clone() prifma_new.Module {
 
 func (t *BasicAuth) Call(command conf.Command) error {
 	if command.GetName() != ModuleDirective || len(command.GetArgs()) != 1 {
-		return conf.NewCommandError(command)
+		return conf.NewErrCommand(command)
 	}
 
 	arg := command.GetArgs()[0]
@@ -91,5 +89,5 @@ func (t *BasicAuth) Call(command conf.Command) error {
 }
 
 func (t *BasicAuth) CallBlock(command conf.Command) (conf.Block, error) {
-	return nil, conf.NewCommandError(command)
+	return nil, conf.NewErrCommand(command)
 }

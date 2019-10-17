@@ -96,7 +96,7 @@ func (t *DefaultTokenHandler) HandleWhitespaceToken(token *WhitespaceToken) erro
 
 func (t *DefaultTokenHandler) HandleNewlineToken(token *NewlineToken) error {
 	if !t.IsCallCommitted() || t.IsStringEscaped() {
-		return NewParseError(t.LineNumber, t.Line)
+		return NewErrParse(t.LineNumber, t.Line)
 	}
 
 	t.IsCommentLine = false
@@ -108,7 +108,7 @@ func (t *DefaultTokenHandler) HandleNewlineToken(token *NewlineToken) error {
 
 func (t *DefaultTokenHandler) HandleDoubleQuotaToken(token *DoubleQuotaToken) error {
 	if t.Directive == "" {
-		return NewParseError(t.LineNumber, t.Line)
+		return NewErrParse(t.LineNumber, t.Line)
 	}
 
 	if t.IsSingleQuotaOpened || t.IsEscaped {
@@ -119,7 +119,7 @@ func (t *DefaultTokenHandler) HandleDoubleQuotaToken(token *DoubleQuotaToken) er
 
 	t.IsDoubleQuotaOpened = !t.IsDoubleQuotaOpened
 	if t.IsDoubleQuotaOpened && t.LastArg == "" {
-		return NewParseError(t.LineNumber, t.Line)
+		return NewErrParse(t.LineNumber, t.Line)
 	}
 
 	return nil
@@ -127,7 +127,7 @@ func (t *DefaultTokenHandler) HandleDoubleQuotaToken(token *DoubleQuotaToken) er
 
 func (t *DefaultTokenHandler) HandleSingleQuotaToken(token *SingleQuotaToken) error {
 	if t.Directive == "" {
-		return NewParseError(t.LineNumber, t.Line)
+		return NewErrParse(t.LineNumber, t.Line)
 	}
 
 	if t.IsDoubleQuotaOpened || t.IsEscaped {
@@ -138,7 +138,7 @@ func (t *DefaultTokenHandler) HandleSingleQuotaToken(token *SingleQuotaToken) er
 
 	t.IsSingleQuotaOpened = !t.IsSingleQuotaOpened
 	if t.IsSingleQuotaOpened && t.LastArg == "" {
-		return NewParseError(t.LineNumber, t.Line)
+		return NewErrParse(t.LineNumber, t.Line)
 	}
 
 	return nil
@@ -152,7 +152,7 @@ func (t *DefaultTokenHandler) HandleHashToken(token *HashToken) error {
 	}
 
 	if !t.IsCallCommitted() {
-		return NewParseError(t.LineNumber, t.Line)
+		return NewErrParse(t.LineNumber, t.Line)
 	}
 
 	t.IsCommentLine = true
@@ -168,7 +168,7 @@ func (t *DefaultTokenHandler) HandleSemicolonToken(token *SemicolonToken) (err e
 	}
 
 	if t.IsCallCommitted() {
-		return NewParseError(t.LineNumber, t.Line)
+		return NewErrParse(t.LineNumber, t.Line)
 	}
 	t.CommitLastArg()
 
@@ -192,7 +192,7 @@ func (t *DefaultTokenHandler) HandleOpeningCurlyBracketToken(token *OpeningCurly
 	}
 
 	if t.IsCallCommitted() {
-		return NewParseError(t.LineNumber, t.Line)
+		return NewErrParse(t.LineNumber, t.Line)
 	}
 	t.CommitLastArg()
 
@@ -216,7 +216,7 @@ func (t *DefaultTokenHandler) HandleClosingCurlyBracketToken(token *ClosingCurly
 	}
 
 	if !t.IsCallCommitted() || t.BlockWrapper.Parent == nil {
-		return NewParseError(t.LineNumber, t.Line)
+		return NewErrParse(t.LineNumber, t.Line)
 	}
 
 	t.BlockWrapper = t.BlockWrapper.Parent
@@ -226,7 +226,7 @@ func (t *DefaultTokenHandler) HandleClosingCurlyBracketToken(token *ClosingCurly
 
 func (t *DefaultTokenHandler) HandleBackslashToken(token *BackslashToken) error {
 	if t.Directive == "" {
-		return NewParseError(t.LineNumber, t.Line)
+		return NewErrParse(t.LineNumber, t.Line)
 	}
 
 	if t.IsEscaped {

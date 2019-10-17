@@ -65,7 +65,7 @@ func (t *DumpLog) Clone() prifma_new.Module {
 
 func (t *DumpLog) Call(command conf.Command) error {
 	if command.GetName() != ModuleDirective || len(command.GetArgs()) != 1 {
-		return conf.NewCommandError(command)
+		return conf.NewErrCommand(command)
 	}
 
 	arg := command.GetArgs()[0]
@@ -77,5 +77,5 @@ func (t *DumpLog) Call(command conf.Command) error {
 }
 
 func (t *DumpLog) CallBlock(command conf.Command) (conf.Block, error) {
-	return nil, conf.NewCommandError(command)
+	return nil, conf.NewErrCommand(command)
 }

@@ -4,7 +4,9 @@ import (
 	"github.com/topvisor/prifma/pkg/prifma_new"
 	"github.com/topvisor/prifma/pkg/prifma_new/accesslog"
 	"github.com/topvisor/prifma/pkg/prifma_new/basicauth"
+	"github.com/topvisor/prifma/pkg/prifma_new/blockreq"
 	"github.com/topvisor/prifma/pkg/prifma_new/dumplog"
+	"github.com/topvisor/prifma/pkg/prifma_new/outgoingip"
 )
 
 func main() {
@@ -25,7 +27,9 @@ func main() {
 func start(configFilename string) error {
 	server := prifma_new.NewServer(
 		dumplog.New(),
+		blockreq.New(),
 		basicauth.New(),
+		outgoingip.New(),
 		accesslog.New(),
 	)
 

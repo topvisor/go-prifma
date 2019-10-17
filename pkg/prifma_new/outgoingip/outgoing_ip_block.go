@@ -23,5 +23,5 @@ func (t *OutgoingIpBlock) Call(command conf.Command) error {
 }
 
 func (t *OutgoingIpBlock) CallBlock(command conf.Command) (conf.Block, error) {
-	return nil, conf.NewCommandError(command)
+	return nil, conf.NewErrCommand(command)
 }

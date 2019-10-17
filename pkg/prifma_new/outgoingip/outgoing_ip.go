@@ -96,7 +96,7 @@ func (t *OutgoingIp) Clone() prifma_new.Module {
 func (t *OutgoingIp) Call(command conf.Command) error {
 	args := command.GetArgs()
 	if command.GetName() != ModuleDirective || len(args) == 0 {
-		return conf.NewCommandError(command)
+		return conf.NewErrCommand(command)
 	}
 	if len(args) == 1 && args[1] == "off" {
 		return t.Off()
@@ -107,7 +107,7 @@ func (t *OutgoingIp) Call(command conf.Command) error {
 
 func (t *OutgoingIp) CallBlock(command conf.Command) (conf.Block, error) {
 	if command.GetName() != ModuleDirective || len(command.GetArgs()) != 0 {
-		return nil, conf.NewCommandError(command)
+		return nil, conf.NewErrCommand(command)
 	}
 
 	return NewOutgoingIpBlock(t), nil

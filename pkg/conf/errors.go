@@ -2,32 +2,32 @@ package conf
 
 import "fmt"
 
-type ParseError struct {
+type ErrParse struct {
 	Line int
 	Data string
 }
 
-func NewParseError(line int, data string) error {
-	return &ParseError{
+func NewErrParse(line int, data string) error {
+	return &ErrParse{
 		Line: line,
 		Data: data,
 	}
 }
 
-func (t *ParseError) Error() string {
+func (t *ErrParse) Error() string {
 	return fmt.Sprintf("parse error(line %d): %s", t.Line, t.Data)
 }
 
-type CommandError struct {
+type ErrCommand struct {
 	Command Command
 }
 
-func NewCommandError(command Command) error {
-	return &CommandError{
+func NewErrCommand(command Command) error {
+	return &ErrCommand{
 		Command: command,
 	}
 }
 
-func (t *CommandError) Error() string {
+func (t *ErrCommand) Error() string {
 	return fmt.Sprintf("wrong directive: %s", t.Command.String())
 }
