@@ -17,7 +17,7 @@ type BeforeHandleRequestModule interface {
 }
 
 type HandleRequestModule interface {
-	HandleRequest(req *http.Request) (*http.Request, Response, error)
+	HandleRequest(result HandleRequestResult) (HandleRequestResult, error)
 }
 
 type AfterWriteResponseModule interface {

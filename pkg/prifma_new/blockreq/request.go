@@ -12,7 +12,7 @@ func NewResponseLocked() prifma_new.Response {
 	return new(ResponseLocked)
 }
 
-func (t *ResponseLocked) Write(rw http.ResponseWriter) error {
+func (t *ResponseLocked) Write(rw http.ResponseWriter, _ prifma_new.HandleRequestResult) error {
 	http.Error(rw, http.StatusText(t.GetCode()), t.GetCode())
 
 	return nil

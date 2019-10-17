@@ -1,13 +1,11 @@
 package outgoingip
 
 import (
-	"context"
 	"fmt"
 	"github.com/topvisor/prifma/pkg/conf"
 	"github.com/topvisor/prifma/pkg/prifma_new"
 	"math/rand"
 	"net"
-	"net/http"
 )
 
 const ModuleDirective = "outgoing_ip"
@@ -24,28 +22,25 @@ func New() prifma_new.Module {
 	}
 }
 
-func (t *OutgoingIp) HandleRequest(req *http.Request) (*http.Request, prifma_new.Response, error) {
+func (t *OutgoingIp) HandleRequest(result prifma_new.HandleRequestResult) (prifma_new.HandleRequestResult, error) {
 	ipsV4Len := len(t.IpsV4)
 	ipsV6Len := len(t.IpsV6)
 
 	if ipsV4Len == 0 && ipsV6Len == 0 {
-		return req, nil, nil
+		return result, nil
 	}
 
-	ctx := req.Context()
+	result.GetDialer().SetIpV4(nil)
+	result.GetDialer().SetIpV6(nil)
 
-	if ipsV4Len == 0 {
-		ctx = context.WithValue(ctx, prifma_new.CtxOutgoingIpV4, nil)
-	} else {
-		ctx = context.WithValue(ctx, prifma_new.CtxOutgoingIpV4, t.IpsV4[rand.Intn(ipsV4Len)])
+	if ipsV4Len != 0 {
+		result.GetDialer().SetIpV4(t.IpsV4[rand.Intn(ipsV4Len)])
 	}
-	if ipsV6Len == 0 {
-		ctx = context.WithValue(ctx, prifma_new.CtxOutgoingIpV6, nil)
-	} else {
-		ctx = context.WithValue(ctx, prifma_new.CtxOutgoingIpV6, t.IpsV6[rand.Intn(ipsV6Len)])
+	if ipsV6Len != 0 {
+		result.GetDialer().SetIpV6(t.IpsV6[rand.Intn(ipsV6Len)])
 	}
 
-	return req.WithContext(ctx), nil, nil
+	return result, nil
 }
 
 func (t *OutgoingIp) Off() error {

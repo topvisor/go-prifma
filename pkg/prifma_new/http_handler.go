@@ -1,6 +1,10 @@
 package prifma_new
 
-import "net/http"
+import (
+	"context"
+	"net"
+	"net/http"
+)
 
 const (
 	StatusClientClosedRequest     = 499
@@ -8,8 +12,7 @@ const (
 )
 
 const (
-	CtxOutgoingIpV4 = iota
-	CtxOutgoingIpV6
+	CtxKeyTransport = iota
 )
 
 type HttpHandler struct {
@@ -33,15 +36,15 @@ func (t *HttpHandler) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 		}
 	}
 
-	var resp Response
+	result := NewHandleRequestResult(req)
 
 	for _, module := range modules {
 		if handler, ok := module.(HandleRequestModule); ok {
 			var err error
-			if req, resp, err = handler.HandleRequest(req); err != nil {
+			if result, err = handler.HandleRequest(result); err != nil {
 				t.Server.GetErrorLog().Println(err)
 			}
-			if resp != nil {
+			if result.GetResponse() != nil {
 				break
 			}
 		}
@@ -64,4 +67,16 @@ func (t *HttpHandler) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 			}
 		}
 	}
+}
+
+func (t *HttpHandler) SetTransport(req *http.Request) *http.Request {
+	transport := &http.Transport{
+		DialContext: net.Dialer{
+			Timeout: t.Server.GetWriteTimeout(),
+		}.DialContext,
+	}
+}
+
+func (t *HttpHandler) DialContext(ctx context.Context, network, addr string) (net.Conn, error) {
+
 }

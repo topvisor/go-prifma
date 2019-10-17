@@ -7,7 +7,6 @@ import (
 	"github.com/topvisor/prifma/pkg/conf"
 	"github.com/topvisor/prifma/pkg/prifma_new"
 	"github.com/topvisor/prifma/pkg/utils"
-	"net/http"
 	"os"
 )
 
@@ -21,18 +20,18 @@ func New() prifma_new.Module {
 	return new(BasicAuth)
 }
 
-func (t *BasicAuth) HandleRequest(req *http.Request) (*http.Request, prifma_new.Response, error) {
+func (t *BasicAuth) HandleRequest(result prifma_new.HandleRequestResult) (prifma_new.HandleRequestResult, error) {
 	if t.Users == nil {
-		return req, nil, nil
+		return result, nil
 	}
 
-	user, pass, _ := utils.ProxyBasicAuth(req)
+	user, pass, _ := utils.ProxyBasicAuth(result.GetRequest())
 	secret, ok := t.Users[user]
 	if !ok || !auth.CheckSecret(pass, secret) {
-		return req, NewResponseRequireAuth(req), nil
+		result.SetResponse(NewResponseRequireAuth(result.GetRequest()))
 	}
 
-	return req, nil, nil
+	return result, nil
 }
 
 func (t *BasicAuth) Off() error {

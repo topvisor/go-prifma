@@ -7,7 +7,7 @@ import (
 )
 
 type Response interface {
-	Write(rw http.ResponseWriter) error
+	Write(rw http.ResponseWriter, result HandleRequestResult) error
 	GetCode() int
 	GetLAddr() net.Addr
 	GetRAddr() net.Addr
@@ -25,7 +25,7 @@ func NewResponseError(code int, error string) Response {
 	}
 }
 
-func (t *ResponseError) Write(rw http.ResponseWriter) error {
+func (t *ResponseError) Write(rw http.ResponseWriter, _ HandleRequestResult) error {
 	errStr := t.Error
 	if errStr == "" {
 		errStr = http.StatusText(t.Code)

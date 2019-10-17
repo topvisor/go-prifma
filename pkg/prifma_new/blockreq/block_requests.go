@@ -3,7 +3,6 @@ package blockreq
 import (
 	"github.com/topvisor/prifma/pkg/conf"
 	"github.com/topvisor/prifma/pkg/prifma_new"
-	"net/http"
 )
 
 const ModuleDirective = "block_requests"
@@ -16,12 +15,12 @@ func New() prifma_new.Module {
 	return new(BlockRequests)
 }
 
-func (t *BlockRequests) HandleRequest(req *http.Request) (*http.Request, prifma_new.Response, error) {
+func (t *BlockRequests) HandleRequest(result prifma_new.HandleRequestResult) (prifma_new.HandleRequestResult, error) {
 	if t.Enabled {
-		return req, NewResponseLocked(), nil
-	} else {
-		return req, nil, nil
+		result.SetResponse(NewResponseLocked())
 	}
+
+	return result, nil
 }
 
 func (t *BlockRequests) Off() error {

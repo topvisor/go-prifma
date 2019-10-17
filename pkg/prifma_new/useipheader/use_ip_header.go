@@ -1,7 +1,6 @@
 package useipheader
 
 import (
-	"context"
 	"fmt"
 	"github.com/topvisor/prifma/pkg/conf"
 	"github.com/topvisor/prifma/pkg/prifma_new"
@@ -22,32 +21,33 @@ func New() prifma_new.Module {
 	return new(UseIpHeader)
 }
 
-func (t *UseIpHeader) HandleRequest(req *http.Request) (*http.Request, prifma_new.Response, error) {
+func (t *UseIpHeader) HandleRequest(result prifma_new.HandleRequestResult) (prifma_new.HandleRequestResult, error) {
 	if !t.Enabled {
-		return req, nil, nil
+		return result, nil
 	}
 
-	ipStr := req.Header.Get(HeaderName)
+	ipStr := result.GetRequest().Header.Get(HeaderName)
 	if ipStr == "" {
-		return req, nil, nil
+		return result, nil
 	}
 
 	ip := net.ParseIP(ipStr)
 	if ip == nil {
-		return req, prifma_new.NewResponseError(http.StatusBadRequest, fmt.Sprintf("wrong outgoing ip: '%s'", ipStr)), nil
+		result.SetResponse(prifma_new.NewResponseError(http.StatusBadRequest, fmt.Sprintf("wrong outgoing ip: '%s'", ipStr)))
+
+		return result, nil
 	}
 
-	ctx := req.Context()
+	result.GetDialer().SetIpV4(nil)
+	result.GetDialer().SetIpV6(nil)
 
 	if ipV4 := ip.To4(); ipV4 != nil {
-		ctx = context.WithValue(ctx, prifma_new.CtxOutgoingIpV4, ipV4)
-		ctx = context.WithValue(ctx, prifma_new.CtxOutgoingIpV6, nil)
+		result.GetDialer().SetIpV4(ipV4)
 	} else {
-		ctx = context.WithValue(ctx, prifma_new.CtxOutgoingIpV4, nil)
-		ctx = context.WithValue(ctx, prifma_new.CtxOutgoingIpV6, ip)
+		result.GetDialer().SetIpV6(ip)
 	}
 
-	return req.WithContext(ctx), nil, nil
+	return result, nil
 }
 
 func (t *UseIpHeader) Off() error {

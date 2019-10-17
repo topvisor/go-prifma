@@ -17,7 +17,7 @@ func NewResponseRequireAuth(req *http.Request) prifma_new.Response {
 	}
 }
 
-func (t *ResponseRequireAuth) Write(rw http.ResponseWriter) error {
+func (t *ResponseRequireAuth) Write(rw http.ResponseWriter, _ prifma_new.HandleRequestResult) error {
 	basicAuth := auth.BasicAuth{
 		Headers: auth.ProxyHeaders,
 	}
