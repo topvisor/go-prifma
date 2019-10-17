@@ -37,8 +37,10 @@ func (t *BasicAuth) HandleRequest(req *http.Request) (*http.Request, prifma_new.
 	return req, nil, nil
 }
 
-func (t *BasicAuth) Off() {
+func (t *BasicAuth) Off() error {
 	t.Users = nil
+
+	return nil
 }
 
 func (t *BasicAuth) LoadHtpasswdFile(filename string) error {
@@ -77,20 +79,17 @@ func (t *BasicAuth) Clone() prifma_new.Module {
 
 func (t *BasicAuth) Call(command conf.Command) error {
 	if command.GetName() != ModuleDirective || len(command.GetArgs()) != 1 {
-		return prifma_new.NewErrWrongDirective(command)
+		return conf.NewCommandError(command)
 	}
 
 	arg := command.GetArgs()[0]
-
 	if arg == "off" {
-		t.Off()
-
-		return nil
+		return t.Off()
 	}
 
 	return t.LoadHtpasswdFile(arg)
 }
 
 func (t *BasicAuth) CallBlock(command conf.Command) (conf.Block, error) {
-	return nil, prifma_new.NewErrWrongDirective(command)
+	return nil, conf.NewCommandError(command)
 }

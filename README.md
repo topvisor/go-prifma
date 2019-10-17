@@ -110,22 +110,15 @@ $GOPATH/bin/prifma --config /path/to/config.conf
 * *Default*: basic_auth off;  
 * *Context*: main, condition
 
-#### outgoing_ip_v4
-IpV4 используемые prifma для запросов (случайный ip из списка)
+#### outgoing_ip
+ip адреса, используемые prifma для запросов (случайный ip из списка)
 
-* *Syntax*: **outgoing_ip_v4** *ip*... | off;
-* *Default*: outgoing_ip_v4 0.0.0.0;  
-* *Context*: main, condition
-
-#### outgoing_ip_v6
-IpV6 используемые prifma для запросов (случайный ip из списка)
-
-* *Syntax*: **outgoing_ip_v6** *ip*... | off;
-* *Default*: outgoing_ip_v6 ::0;  
+* *Syntax*: **outgoing_ip** *ip*...; | { *ip*;... } | off;
+* *Default*: outgoing_ip 0.0.0.0;  
 * *Context*: main, condition
 
 #### use_ip_header
-Установить ip адрес для запроса исходя из переданных заголовков `Proxy-Use-IpV4` и `Proxy-Use-IpV6`
+Установить ip адрес для запроса исходя из переданного заголовка `Proxy-Use-Ip`
 
 * *Syntax*: **use_ip_header** on | off;
 * *Default*: use_ip_header off;  

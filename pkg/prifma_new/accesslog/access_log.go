@@ -20,8 +20,10 @@ func New() prifma_new.Module {
 	return new(AccessLog)
 }
 
-func (t *AccessLog) Off() {
+func (t *AccessLog) Off() error {
 	t.Logger = nil
+
+	return nil
 }
 
 func (t *AccessLog) SetFilename(filename string) error {
@@ -71,20 +73,17 @@ func (t *AccessLog) Clone() prifma_new.Module {
 
 func (t *AccessLog) Call(command conf.Command) error {
 	if command.GetName() != ModuleDirective || len(command.GetArgs()) != 1 {
-		return prifma_new.NewErrWrongDirective(command)
+		return conf.NewCommandError(command)
 	}
 
 	arg := command.GetArgs()[0]
-
 	if arg == "off" {
-		t.Off()
-
-		return nil
+		return t.Off()
 	}
 
 	return t.SetFilename(arg)
 }
 
 func (t *AccessLog) CallBlock(command conf.Command) (conf.Block, error) {
-	return nil, prifma_new.NewErrWrongDirective(command)
+	return nil, conf.NewCommandError(command)
 }

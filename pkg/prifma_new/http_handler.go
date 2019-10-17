@@ -7,6 +7,11 @@ const (
 	StatusTextClientClosedRequest = "Client Closed Request"
 )
 
+const (
+	CtxOutgoingIpV4 = iota
+	CtxOutgoingIpV6
+)
+
 type HttpHandler struct {
 	Server Server
 }

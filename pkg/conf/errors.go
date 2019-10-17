@@ -17,3 +17,17 @@ func NewParseError(line int, data string) error {
 func (t *ParseError) Error() string {
 	return fmt.Sprintf("parse error(line %d): %s", t.Line, t.Data)
 }
+
+type CommandError struct {
+	Command Command
+}
+
+func NewCommandError(command Command) error {
+	return &CommandError{
+		Command: command,
+	}
+}
+
+func (t *CommandError) Error() string {
+	return fmt.Sprintf("wrong directive: %s", t.Command.String())
+}
