@@ -7,6 +7,7 @@ import (
 	"github.com/topvisor/prifma/pkg/prifma_new/blockreq"
 	"github.com/topvisor/prifma/pkg/prifma_new/dumplog"
 	"github.com/topvisor/prifma/pkg/prifma_new/outgoingip"
+	"github.com/topvisor/prifma/pkg/prifma_new/useipheader"
 )
 
 func main() {
@@ -30,6 +31,7 @@ func start(configFilename string) error {
 		blockreq.New(),
 		basicauth.New(),
 		outgoingip.New(),
+		useipheader.New(),
 		accesslog.New(),
 	)
 
