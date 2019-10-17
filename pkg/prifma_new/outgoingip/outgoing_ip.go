@@ -105,5 +105,5 @@ func (t *OutgoingIp) CallBlock(command conf.Command) (conf.Block, error) {
 		return nil, conf.NewErrCommand(command)
 	}
 
-	return NewOutgoingIpBlock(t), nil
+	return NewConfBlock(t), nil
 }
