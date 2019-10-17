@@ -6,6 +6,7 @@ import (
 )
 
 type Module interface {
+	GetDirective() string
 	Clone() Module
 
 	conf.Block

@@ -11,6 +11,8 @@ import (
 	"strings"
 )
 
+const ModuleDirective = "dump_log"
+
 type DumpLog struct {
 	Logger *log.Logger
 }
@@ -49,6 +51,10 @@ func (t *DumpLog) SetFilename(filename string) error {
 	return nil
 }
 
+func (t *DumpLog) GetDirective() string {
+	return ModuleDirective
+}
+
 func (t *DumpLog) Clone() prifma_new.Module {
 	clone := *t
 
@@ -56,10 +62,7 @@ func (t *DumpLog) Clone() prifma_new.Module {
 }
 
 func (t *DumpLog) Call(command conf.Command) error {
-	if command.GetName() != "dump_log" {
-		return prifma_new.NewErrModuleDirectiveNotFound(command)
-	}
-	if len(command.GetArgs()) != 1 {
+	if command.GetName() != ModuleDirective || len(command.GetArgs()) != 1 {
 		return prifma_new.NewErrWrongDirective(command)
 	}
 
@@ -75,5 +78,5 @@ func (t *DumpLog) Call(command conf.Command) error {
 }
 
 func (t *DumpLog) CallBlock(command conf.Command) (conf.Block, error) {
-	return nil, prifma_new.NewErrModuleDirectiveNotFound(command)
+	return nil, prifma_new.NewErrWrongDirective(command)
 }

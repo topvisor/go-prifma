@@ -9,6 +9,8 @@ import (
 	"os"
 )
 
+const ModuleDirective = "access_log"
+
 type AccessLog struct {
 	Logger *log.Logger
 }
@@ -56,6 +58,10 @@ func (t *AccessLog) AfterWriteResponse(req *http.Request, resp prifma_new.Respon
 	return nil
 }
 
+func (t *AccessLog) GetDirective() string {
+	return ModuleDirective
+}
+
 func (t *AccessLog) Clone() prifma_new.Module {
 	clone := *t
 
@@ -63,10 +69,7 @@ func (t *AccessLog) Clone() prifma_new.Module {
 }
 
 func (t *AccessLog) Call(command conf.Command) error {
-	if command.GetName() != "access_log" {
-		return prifma_new.NewErrModuleDirectiveNotFound(command)
-	}
-	if len(command.GetArgs()) != 1 {
+	if command.GetName() != ModuleDirective || len(command.GetArgs()) != 1 {
 		return prifma_new.NewErrWrongDirective(command)
 	}
 
@@ -82,5 +85,5 @@ func (t *AccessLog) Call(command conf.Command) error {
 }
 
 func (t *AccessLog) CallBlock(command conf.Command) (conf.Block, error) {
-	return nil, prifma_new.NewErrModuleDirectiveNotFound(command)
+	return nil, prifma_new.NewErrWrongDirective(command)
 }

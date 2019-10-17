@@ -22,10 +22,10 @@ func main() {
 }
 
 func start(configFilename string) error {
-	server := prifma_new.NewServer([]prifma_new.Module{
+	server := prifma_new.NewServer(
 		accesslog.New(),
 		dumplog.New(),
-	})
+	)
 
 	if err := server.LoadConfig(configFilename); err != nil {
 		return err

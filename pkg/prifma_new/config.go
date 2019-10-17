@@ -78,45 +78,53 @@ func (t *ConfigServer) CallBlock(command conf.Command) (conf.Block, error) {
 
 type ConfigModule struct {
 	Server Server
+	Conds  []Condition
 }
 
 func NewConfigModule(server Server) conf.Block {
 	return &ConfigModule{
 		Server: server,
+		Conds:  make([]Condition, 0),
 	}
 }
 
 func (t *ConfigModule) Call(command conf.Command) error {
-	for _, module := range t.Server.GetModules() {
-		if err := module.Call(command); err != nil {
-			if _, ok := err.(*ErrModuleDirectiveNotFound); !ok {
-				return err
-			}
-		} else {
-			return nil
-		}
+	module := t.Server.GetModulesManager().GetModules(t.Conds...)[command.GetName()]
+	if module == nil {
+		return NewErrWrongDirective(command)
 	}
 
-	return NewErrWrongDirective(command)
+	return module.Call(command)
 }
 
 func (t *ConfigModule) CallBlock(command conf.Command) (conf.Block, error) {
 	if command.GetName() == "condition" {
-		if len(command.GetArgs()) != 3 {
-			return nil, NewErrWrongDirective(command)
-		}
-
+		return t.CallCondition(command)
 	}
 
-	for _, module := range t.Server.GetModules() {
-		if block, err := module.CallBlock(command); err != nil {
-			if _, ok := err.(*ErrModuleDirectiveNotFound); !ok {
-				return nil, err
-			}
-		} else {
-			return block, nil
-		}
+	module := t.Server.GetModulesManager().GetModules(t.Conds...)[command.GetName()]
+	if module == nil {
+		return nil, NewErrWrongDirective(command)
 	}
 
-	return nil, NewErrWrongDirective(command)
+	return module.CallBlock(command)
+}
+
+func (t *ConfigModule) CallCondition(command conf.Command) (conf.Block, error) {
+	args := command.GetArgs()
+	if len(args) != 3 {
+		return nil, NewErrWrongDirective(command)
+	}
+
+	cond, err := NewCondition(args[0], args[1], args[2])
+	if err != nil {
+		return nil, err
+	}
+
+	conditionBlock := &ConfigModule{
+		Server: t.Server,
+		Conds:  append(t.Conds, cond),
+	}
+
+	return conditionBlock, nil
 }

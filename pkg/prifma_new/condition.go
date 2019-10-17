@@ -9,7 +9,6 @@ import (
 )
 
 type Condition interface {
-	GetHash() ConditionHash
 	Test(req *http.Request) bool
 }
 
@@ -19,45 +18,26 @@ func NewCondition(key string, typ string, val string) (Condition, error) {
 		return nil, err
 	}
 
-	base := ConditionBase{
-		Tester: tester,
-		ConditionHash: ConditionHash{
-			Key:   key,
-			Type:  typ,
-			Value: val,
-		},
-	}
-
 	switch true {
 	case key == "src_ip":
-		return &ConditionSrcIp{base}, nil
+		return NewConditionSrcIp(tester), nil
 	case key == "dst_domain":
-		return &ConditionDstDomain{base}, nil
+		return NewConditionDstDomain(tester), nil
 	case strings.HasPrefix(key, "header_"):
-		return &ConditionHeader{base}, nil
+		return NewConditionHeader(tester, key), nil
 	}
 
 	return nil, fmt.Errorf("unavailable condition key: '%s'", key)
 }
 
-type ConditionHash struct {
-	Key   string
-	Type  string
-	Value string
-}
-
-func (t ConditionHash) GetHash() ConditionHash {
-	return t
-}
-
-type ConditionBase struct {
-	Tester ConditionTester
-
-	ConditionHash
-}
-
 type ConditionSrcIp struct {
-	ConditionBase
+	Tester ConditionTester
+}
+
+func NewConditionSrcIp(tester ConditionTester) Condition {
+	return &ConditionSrcIp{
+		Tester: tester,
+	}
 }
 
 func (t *ConditionSrcIp) Test(req *http.Request) bool {
@@ -65,7 +45,13 @@ func (t *ConditionSrcIp) Test(req *http.Request) bool {
 }
 
 type ConditionDstDomain struct {
-	ConditionBase
+	Tester ConditionTester
+}
+
+func NewConditionDstDomain(tester ConditionTester) Condition {
+	return &ConditionDstDomain{
+		Tester: tester,
+	}
 }
 
 func (t *ConditionDstDomain) Test(req *http.Request) bool {
@@ -83,19 +69,22 @@ func (t *ConditionDstDomain) Test(req *http.Request) bool {
 }
 
 type ConditionHeader struct {
-	ConditionBase
+	Tester ConditionTester
+	Name   string
+}
+
+func NewConditionHeader(tester ConditionTester, key string) Condition {
+	name := strings.Replace(key, "header_", "", 1)
+	name = strings.ReplaceAll(name, "_", "-")
+
+	return &ConditionHeader{
+		Tester: tester,
+		Name:   name,
+	}
 }
 
 func (t *ConditionHeader) Test(req *http.Request) bool {
-	name := t.GetName()
-	header := req.Header.Get(name)
+	header := req.Header.Get(t.Name)
 
 	return t.Tester.Test(header)
-}
-
-func (t *ConditionHeader) GetName() string {
-	name := strings.Replace(t.Key, "header_", "", 1)
-	name = strings.ReplaceAll(name, "_", "-")
-
-	return name
 }
