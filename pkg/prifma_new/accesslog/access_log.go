@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/topvisor/prifma/pkg/conf"
 	"github.com/topvisor/prifma/pkg/prifma_new"
+	"github.com/topvisor/prifma/pkg/utils"
 	"log"
 	"net/http"
 	"os"
@@ -40,7 +41,7 @@ func (t *AccessLog) AfterWriteResponse(req *http.Request, resp prifma_new.Respon
 	}
 
 	var user *string
-	if username, _, ok := prifma_new.ProxyBasicAuth(req); ok {
+	if username, _, ok := utils.ProxyBasicAuth(req); ok {
 		user = &username
 	}
 

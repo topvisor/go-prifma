@@ -1,6 +1,7 @@
 package prifma_new
 
 import (
+	"fmt"
 	"net"
 	"net/http"
 )
@@ -12,24 +13,37 @@ type Response interface {
 	GetRAddr() net.Addr
 }
 
-type TestResponse struct {
+type ResponseError struct {
+	Code  int
+	Error string
 }
 
-func (t *TestResponse) Write(rw http.ResponseWriter) error {
-	rw.WriteHeader(http.StatusOK)
-	_, err := rw.Write(([]byte)(http.StatusText(http.StatusOK)))
-
-	return err
+func NewResponseError(code int, error string) Response {
+	return &ResponseError{
+		Code:  code,
+		Error: error,
+	}
 }
 
-func (t *TestResponse) GetCode() int {
-	return http.StatusOK
+func (t *ResponseError) Write(rw http.ResponseWriter) error {
+	errStr := t.Error
+	if errStr == "" {
+		errStr = http.StatusText(t.Code)
+	}
+
+	http.Error(rw, errStr, t.Code)
+
+	return fmt.Errorf("%d %s", t.Code, errStr)
 }
 
-func (t *TestResponse) GetLAddr() net.Addr {
+func (t *ResponseError) GetCode() int {
+	return t.Code
+}
+
+func (*ResponseError) GetLAddr() net.Addr {
 	return nil
 }
 
-func (t *TestResponse) GetRAddr() net.Addr {
+func (*ResponseError) GetRAddr() net.Addr {
 	return nil
 }

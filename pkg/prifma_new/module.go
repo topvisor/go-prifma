@@ -12,10 +12,14 @@ type Module interface {
 	conf.Block
 }
 
-type BeforeHandleRequestHandler interface {
+type BeforeHandleRequestModule interface {
 	BeforeHandleRequest(req *http.Request) error
 }
 
-type AfterWriteResponseHandler interface {
+type HandleRequestModule interface {
+	HandleRequest(req *http.Request) (*http.Request, Response, error)
+}
+
+type AfterWriteResponseModule interface {
 	AfterWriteResponse(req *http.Request, resp Response) error
 }
