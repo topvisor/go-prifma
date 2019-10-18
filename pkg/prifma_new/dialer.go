@@ -7,9 +7,12 @@ import (
 	"net"
 )
 
+var ErrOutgoingIpNotDefined = errors.New("outgoing ip address wasn't defined")
+
 type Dialer interface {
 	GetIpV4() net.IP
 	GetIpV6() net.IP
+	GetLocalIp(hostname string) (net.IP, error)
 
 	SetIpV4(ip net.IP)
 	SetIpV6(ip net.IP)
@@ -35,25 +38,12 @@ func (t *DefaultDialer) GetIpV6() net.IP {
 	return t.IpV6
 }
 
-func (t *DefaultDialer) SetIpV4(ip net.IP) {
-	t.IpV4 = ip
-}
-
-func (t *DefaultDialer) SetIpV6(ip net.IP) {
-	t.IpV6 = ip
-}
-
-func (t *DefaultDialer) DialContext(ctx context.Context, network, address string) (net.Conn, error) {
+func (t *DefaultDialer) GetLocalIp(hostname string) (net.IP, error) {
 	var localIp net.IP
 
 	switch true {
 	case t.IpV4 != nil && t.IpV6 != nil:
-		host, _, err := net.SplitHostPort(address)
-		if err != nil {
-			return nil, err
-		}
-
-		dstIpV4, _, err := utils.LookupIp(host)
+		dstIpV4, _, err := utils.LookupIp(hostname)
 		if err != nil {
 			return nil, err
 		}
@@ -70,7 +60,29 @@ func (t *DefaultDialer) DialContext(ctx context.Context, network, address string
 	}
 
 	if localIp == nil {
-		return nil, errors.New("outgoing ip address wasn't defined")
+		return nil, ErrOutgoingIpNotDefined
+	}
+
+	return localIp, nil
+}
+
+func (t *DefaultDialer) SetIpV4(ip net.IP) {
+	t.IpV4 = ip.To4()
+}
+
+func (t *DefaultDialer) SetIpV6(ip net.IP) {
+	t.IpV6 = ip.To16()
+}
+
+func (t *DefaultDialer) DialContext(ctx context.Context, network, address string) (net.Conn, error) {
+	host, _, err := net.SplitHostPort(address)
+	if err != nil {
+		return nil, err
+	}
+
+	localIp, err := t.GetLocalIp(host)
+	if err != nil {
+		return nil, err
 	}
 
 	t.Dialer.LocalAddr = &net.TCPAddr{

@@ -43,7 +43,7 @@ func NewServer(modules ...Module) Server {
 	}
 
 	t.Config = NewConfigMain(t)
-	t.Server.Handler = NewHttpHandler(t)
+	t.Server.Handler = NewRequestHandler(t)
 	t.Server.Addr = net.JoinHostPort("0.0.0.0", "3128")
 
 	return t

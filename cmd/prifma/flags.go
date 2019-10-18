@@ -8,7 +8,7 @@ import (
 const (
 	configFlag      = "config"
 	configFlagShort = "c"
-	configDefault   = "./config.conf"
+	configDefault   = "./prifma.conf"
 	configUsage     = "Set path to config.json"
 
 	helpFlag      = "help"

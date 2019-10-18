@@ -11,21 +11,17 @@ const (
 	StatusTextClientClosedRequest = "Client Closed Request"
 )
 
-const (
-	CtxKeyTransport = iota
-)
-
-type HttpHandler struct {
+type RequestHandler struct {
 	Server Server
 }
 
-func NewHttpHandler(server Server) http.Handler {
-	return &HttpHandler{
+func NewRequestHandler(server Server) http.Handler {
+	return &RequestHandler{
 		Server: server,
 	}
 }
 
-func (t *HttpHandler) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
+func (t *RequestHandler) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 	modules := t.Server.GetModulesManager().GetModulesForRequest(req)
 
 	for _, module := range modules {
@@ -69,7 +65,7 @@ func (t *HttpHandler) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 	}
 }
 
-func (t *HttpHandler) SetTransport(req *http.Request) *http.Request {
+func (t *RequestHandler) SetTransport(req *http.Request) *http.Request {
 	transport := &http.Transport{
 		DialContext: net.Dialer{
 			Timeout: t.Server.GetWriteTimeout(),
@@ -77,6 +73,6 @@ func (t *HttpHandler) SetTransport(req *http.Request) *http.Request {
 	}
 }
 
-func (t *HttpHandler) DialContext(ctx context.Context, network, addr string) (net.Conn, error) {
+func (t *RequestHandler) DialContext(ctx context.Context, network, addr string) (net.Conn, error) {
 
 }

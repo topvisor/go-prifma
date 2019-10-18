@@ -21,24 +21,29 @@ type HandleRequestResult interface {
 	GetProxy() ProxyFunc
 	GetProxyConnectHeader() http.Header
 	GetResponse() Response
+	GetServer() Server
 
 	GetRoundTripper() http.RoundTripper
 }
 
-func NewHandleRequestResult(req *http.Request) HandleRequestResult {
+func NewHandleRequestResult(req *http.Request, server Server) HandleRequestResult {
 	t := &DefaultHandleRequestResult{
+		Server:  server,
 		Request: req,
 		Dialer:  NewDialer(),
 	}
 
 	t.Transport = &http.Transport{
-		DialContext: t.DialContext,
+		DialContext:           t.DialContext,
+		IdleConnTimeout:       server.GetIdleTimeout(),
+		ResponseHeaderTimeout: server.GetWriteTimeout(),
 	}
 
 	return t
 }
 
 type DefaultHandleRequestResult struct {
+	Server    Server
 	Request   *http.Request
 	Response  Response
 	Dialer    Dialer
@@ -83,6 +88,10 @@ func (t *DefaultHandleRequestResult) GetProxyConnectHeader() http.Header {
 
 func (t *DefaultHandleRequestResult) GetResponse() Response {
 	return t.Response
+}
+
+func (t *DefaultHandleRequestResult) GetServer() Server {
+	return t.Server
 }
 
 func (t *DefaultHandleRequestResult) GetRoundTripper() http.RoundTripper {

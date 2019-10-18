@@ -1,0 +1,147 @@
+package tunnel
+
+import (
+	"context"
+	"encoding/base64"
+	"errors"
+	"github.com/topvisor/prifma/pkg/prifma_new"
+	"github.com/topvisor/prifma/pkg/utils"
+	"net"
+	"net/http"
+	"net/url"
+)
+
+type ResponseTunnel struct {
+	ResponseCode int
+	DstConn      net.Conn
+}
+
+func NewResponseTunnel() prifma_new.Response {
+	return new(ResponseTunnel)
+}
+
+func (t *ResponseTunnel) Write(rw http.ResponseWriter, result prifma_new.HandleRequestResult) error {
+	if result.GetProxy() != nil {
+		if err := t.ConnectToProxy(result); err != nil {
+			http.Error(rw, err.Error(), http.StatusBadGateway)
+			t.ResponseCode = http.StatusBadGateway
+
+			return err
+		}
+	}
+
+	if t.DstConn == nil {
+		if err := t.ConnectToRequest(result); err != nil {
+			http.Error(rw, err.Error(), http.StatusBadGateway)
+			t.ResponseCode = http.StatusBadGateway
+
+			return err
+		}
+	}
+
+	rw.WriteHeader(http.StatusOK)
+	t.ResponseCode = http.StatusOK
+
+	clientConn, _, err := rw.(http.Hijacker).Hijack()
+	if err != nil {
+		utils.CloseFile(t.DstConn)
+		http.Error(rw, err.Error(), http.StatusInternalServerError)
+		t.ResponseCode = http.StatusInternalServerError
+
+		return err
+	}
+
+	writeTimeout := result.GetServer().GetWriteTimeout()
+	readTimeout := result.GetServer().GetReadTimeout()
+	if readTimeout == 0 {
+		readTimeout = result.GetServer().GetReadHeaderTimeout()
+	}
+	readTimeout += result.GetServer().GetIdleTimeout()
+
+	go utils.Transfer(readTimeout, writeTimeout, clientConn, t.DstConn)
+	go utils.Transfer(readTimeout, writeTimeout, t.DstConn, clientConn)
+
+	return nil
+}
+
+func (t *ResponseTunnel) GetCode() int {
+	return t.ResponseCode
+}
+
+func (t *ResponseTunnel) GetLAddr() net.Addr {
+	if t.DstConn == nil {
+		return nil
+	}
+
+	return t.DstConn.LocalAddr()
+}
+
+func (t *ResponseTunnel) GetRAddr() net.Addr {
+	if t.DstConn == nil {
+		return nil
+	}
+
+	return t.DstConn.RemoteAddr()
+}
+
+func (t *ResponseTunnel) ConnectToProxy(result prifma_new.HandleRequestResult) error {
+	proxyUrl, err := result.GetProxy()(result.GetRequest())
+	if err != nil {
+		return err
+	}
+
+	proxyRequest := &http.Request{
+		Method: http.MethodConnect,
+		URL: &url.URL{
+			Scheme: result.GetRequest().URL.Scheme,
+			Host:   result.GetRequest().Host,
+		},
+		Proto:      "HTTP/1.1",
+		ProtoMajor: 1,
+		ProtoMinor: 1,
+		Header:     make(http.Header),
+		Host:       result.GetRequest().Host,
+	}
+	proxyRequest.Header.Set("Host", result.GetRequest().Host)
+	proxyRequest.Header.Set("Proxy-Connection", "keep-alive")
+	if proxyUrl.User != nil {
+		authHash := base64.StdEncoding.EncodeToString([]byte(proxyUrl.User.String()))
+		proxyRequest.Header.Set("Proxy-Authorization", "Basic "+authHash)
+	}
+	proxyRequest = proxyRequest.WithContext(result.GetRequest().Context())
+
+	roundTripper := &http.Transport{
+		DialContext: func(ctx context.Context, network, _ string) (conn net.Conn, err error) {
+			t.DstConn, err = result.GetDialer().DialContext(ctx, network, proxyUrl.Host)
+
+			return t.DstConn, err
+		},
+		ResponseHeaderTimeout: result.GetServer().GetWriteTimeout(),
+	}
+
+	resp, err := roundTripper.RoundTrip(proxyRequest)
+	if err != nil {
+		return err
+	}
+	if resp.StatusCode != http.StatusOK {
+		return errors.New(http.StatusText(http.StatusBadGateway))
+	}
+
+	return nil
+}
+
+func (t *ResponseTunnel) ConnectToRequest(result prifma_new.HandleRequestResult) error {
+	host, port, err := net.SplitHostPort(result.GetRequest().Host)
+	if err != nil {
+		host = result.GetRequest().Host
+		port = "443"
+	}
+
+	ctx := result.GetRequest().Context()
+	network := "tcp"
+	addr := net.JoinHostPort(host, port)
+
+	t.DstConn, err = result.GetDialer().DialContext(ctx, network, addr)
+
+	return err
+}

@@ -27,7 +27,7 @@ func (t *dialer) connect(url *url.URL) (net.Conn, error) {
 			fallthrough
 		case "ws":
 			port = "80"
-		case "https":
+		case "tunnel":
 			fallthrough
 		case "wss":
 			port = "443"

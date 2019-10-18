@@ -2,8 +2,8 @@ package prifma_new
 
 import (
 	"fmt"
+	"github.com/topvisor/prifma/pkg/utils"
 	"golang.org/x/net/idna"
-	"net"
 	"net/http"
 	"strings"
 )
@@ -55,12 +55,7 @@ func NewConditionDstDomain(tester ConditionTester) Condition {
 }
 
 func (t *ConditionDstDomain) Test(req *http.Request) bool {
-	host, _, err := net.SplitHostPort(req.Host)
-	if err != nil {
-		return false
-	}
-
-	host, err = idna.ToUnicode(host)
+	host, err := idna.ToUnicode(utils.GetRequestHostname(req))
 	if err != nil {
 		return false
 	}

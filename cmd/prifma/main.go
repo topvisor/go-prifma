@@ -6,6 +6,7 @@ import (
 	"github.com/topvisor/prifma/pkg/prifma_new/basicauth"
 	"github.com/topvisor/prifma/pkg/prifma_new/blockreq"
 	"github.com/topvisor/prifma/pkg/prifma_new/dumplog"
+	"github.com/topvisor/prifma/pkg/prifma_new/http"
 	"github.com/topvisor/prifma/pkg/prifma_new/outgoingip"
 	"github.com/topvisor/prifma/pkg/prifma_new/proxyreq"
 	"github.com/topvisor/prifma/pkg/prifma_new/useipheader"
@@ -35,6 +36,7 @@ func start(configFilename string) error {
 		useipheader.New(),
 		proxyreq.New(),
 		accesslog.New(),
+		http.New(),
 	)
 
 	if err := server.LoadConfig(configFilename); err != nil {
