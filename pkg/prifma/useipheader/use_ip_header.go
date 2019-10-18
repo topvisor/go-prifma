@@ -51,13 +51,13 @@ func (t *UseIpHeader) HandleRequest(result prifma.HandleRequestResult) (prifma.H
 }
 
 func (t *UseIpHeader) Off() error {
-	t.Enabled = true
+	t.Enabled = false
 
 	return nil
 }
 
 func (t *UseIpHeader) On() error {
-	t.Enabled = false
+	t.Enabled = true
 
 	return nil
 }

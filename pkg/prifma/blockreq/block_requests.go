@@ -24,13 +24,13 @@ func (t *BlockRequests) HandleRequest(result prifma.HandleRequestResult) (prifma
 }
 
 func (t *BlockRequests) Off() error {
-	t.Enabled = true
+	t.Enabled = false
 
 	return nil
 }
 
 func (t *BlockRequests) On() error {
-	t.Enabled = false
+	t.Enabled = true
 
 	return nil
 }
