@@ -11,7 +11,7 @@ go get -u github.com/topvisor/prifma/cmd/prifma
 # run
 
 ```shell script
-$GOPATH/bin/prifma --config /path/to/config.conf
+$GOPATH/bin/prifma --config /path/to/prifma.conf
 ```
 
 # config

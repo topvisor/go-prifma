@@ -2,15 +2,9 @@ package utils
 
 import (
 	"net"
-	"net/http"
 )
 
 func LookupIp(host string) (ipV4 net.IP, ipV6 net.IP, err error) {
-	host, _, err := net.SplitHostPort(req.Host)
-	if err != nil {
-		return nil, nil, err
-	}
-
 	ips, err := net.LookupIP(host)
 	if err != nil {
 		return nil, nil, err

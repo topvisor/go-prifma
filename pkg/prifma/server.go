@@ -1,209 +1,201 @@
 package prifma
 
 import (
-	"context"
 	"fmt"
-	"io"
+	"github.com/topvisor/prifma/pkg/conf"
 	"log"
 	"net"
 	"net/http"
 	"os"
+	"strconv"
 	"time"
 )
 
-type listenType byte
-
-const (
-	ListenTypeHttp listenType = iota
-)
-
-func listenTypeFromString(lTypeStr string) (*listenType, error) {
-	switch lTypeStr {
-	case "http":
-		listenType := ListenTypeHttp
-		return &listenType, nil
-	default:
-		return nil, fmt.Errorf("unavailable listen type: \"%s\"", lTypeStr)
-	}
-}
-
 type Server interface {
+	GetModulesManager() ModulesManager
+	GetListenIp() net.IP
+	GetListenPort() int
+	GetListenType() ListenType
+	GetErrorLog() *log.Logger
+	GetReadTimeout() time.Duration
+	GetReadHeaderTimeout() time.Duration
+	GetWriteTimeout() time.Duration
+	GetIdleTimeout() time.Duration
+
+	SetListenIp(ip string) error
+	SetListenPort(port string) error
+	SetListenType(typ string) error
+	SetErrorLog(filename string) error
+	SetReadTimeout(timeout string) error
+	SetReadHeaderTimeout(timeout string) error
+	SetWriteTimeout(timeout string) error
+	SetIdleTimeout(timeout string) error
+
+	LoadConfig(filename string) error
 	ListenAndServe() error
-	Close() error
-	Shutdown(ctx context.Context) error
 }
 
-func NewServerFromConfig(config Config) (Server, error) {
-	b := new(ServerBuilder)
-	if err := b.SetFromConfig(config); err != nil {
-		return nil, err
+func NewServer(modules ...Module) Server {
+	t := &DefaultServer{
+		ModulesManager: NewModulesManager(modules...),
+		ListenType:     ListenTypeHttp,
+		ErrorLog:       log.New(os.Stderr, "", log.Ldate|log.Ltime|log.Lmicroseconds),
 	}
 
-	s := b.Build()
+	t.Config = NewConfigMain(t)
+	t.Server.Handler = NewRequestHandler(t)
+	t.Server.Addr = net.JoinHostPort("0.0.0.0", "3128")
 
-	return s, nil
+	return t
 }
 
-func NewServerFromConfigFile(filename string) (Server, error) {
-	b := new(ServerBuilder)
-	if err := b.SetFromConfigFile(filename); err != nil {
-		return nil, err
-	}
-
-	s := b.Build()
-
-	return s, nil
+type DefaultServer struct {
+	ModulesManager ModulesManager
+	ListenType     ListenType
+	ErrorLog       *log.Logger
+	Config         conf.Block
+	Server         http.Server
 }
 
-type ServerBuilder struct {
-	ListenIp          net.IP
-	ListenPort        int
-	ListenType        listenType
-	ErrorLog          *log.Logger
-	ReadTimeout       time.Duration
-	ReadHeaderTimeout time.Duration
-	WriteTimeout      time.Duration
-	IdleTimeout       time.Duration
-	Handler           Handler
+func (t *DefaultServer) GetModulesManager() ModulesManager {
+	return t.ModulesManager
 }
 
-func (t *ServerBuilder) SetFromConfig(config Config) error {
-	port := config.Listen.ListenPort
+func (t *DefaultServer) GetListenIp() net.IP {
+	ipStr, _, _ := net.SplitHostPort(t.Server.Addr)
+	ip := net.ParseIP(ipStr)
 
-	var ip net.IP
-	if config.Listen.ListenIp != nil {
-		if ip = net.ParseIP(*config.Listen.ListenIp); ip == nil {
-			return fmt.Errorf("incorrect ip address: \"%s\"", *config.Listen.ListenIp)
-		}
-	}
+	return ip
+}
 
-	listenType, err := listenTypeFromString(config.Listen.ListenType)
-	if err != nil {
-		return err
-	}
+func (t *DefaultServer) GetListenPort() int {
+	_, portStr, _ := net.SplitHostPort(t.Server.Addr)
+	port, _ := strconv.Atoi(portStr)
 
-	var errorLog *log.Logger
-	if config.Listen.ErrorLog != nil {
-		errorLogFile, err := os.Create(*config.Listen.ErrorLog)
-		if err != nil {
-			return err
-		}
+	return port
+}
 
-		errorLog = log.New(errorLogFile, "", log.Ldate|log.Ltime|log.Lmicroseconds)
-	}
+func (t *DefaultServer) GetListenType() ListenType {
+	return t.ListenType
+}
 
-	var readTimeout, readHeaderTimeout, writeTimeout, idleTimeout time.Duration
-	if config.Listen.ReadTimeout != nil {
-		if readTimeout, err = time.ParseDuration(*config.Listen.ReadTimeout); err != nil {
-			return err
-		}
-	}
-	if config.Listen.ReadHeaderTimeout != nil {
-		if readHeaderTimeout, err = time.ParseDuration(*config.Listen.ReadHeaderTimeout); err != nil {
-			return err
-		}
-	}
-	if config.Listen.WriteTimeout != nil {
-		if writeTimeout, err = time.ParseDuration(*config.Listen.WriteTimeout); err != nil {
-			return err
-		}
-	}
-	if config.Listen.IdleTimeout != nil {
-		if idleTimeout, err = time.ParseDuration(*config.Listen.IdleTimeout); err != nil {
-			return err
-		}
+func (t *DefaultServer) GetErrorLog() *log.Logger {
+	return t.ErrorLog
+}
+
+func (t *DefaultServer) GetReadTimeout() time.Duration {
+	return t.Server.ReadTimeout
+}
+
+func (t *DefaultServer) GetReadHeaderTimeout() time.Duration {
+	return t.Server.ReadTimeout
+}
+
+func (t *DefaultServer) GetWriteTimeout() time.Duration {
+	return t.Server.WriteTimeout
+}
+
+func (t *DefaultServer) GetIdleTimeout() time.Duration {
+	return t.Server.IdleTimeout
+}
+
+func (t *DefaultServer) SetListenIp(ip string) error {
+	if net.ParseIP(ip) == nil {
+		return fmt.Errorf("invalid ip: %s", ip)
 	}
 
-	handler := Handler{}
-	if err = handler.setFromConfig(config.ConfigHandler); err != nil {
-		return err
-	}
-
-	t.ListenIp = ip
-	t.ListenPort = port
-	t.ListenType = *listenType
-	t.ErrorLog = errorLog
-	t.ReadTimeout = readTimeout
-	t.ReadHeaderTimeout = readHeaderTimeout
-	t.WriteTimeout = writeTimeout
-	t.IdleTimeout = idleTimeout
-	t.Handler = handler
+	_, port, _ := net.SplitHostPort(t.Server.Addr)
+	t.Server.Addr = net.JoinHostPort(ip, port)
 
 	return nil
 }
 
-func (t *ServerBuilder) SetFromConfigFile(filename string) error {
-	config, err := ParseConfigFromFile(filename)
+func (t *DefaultServer) SetListenPort(port string) error {
+	if intPort, err := strconv.ParseUint(port, 0, 0); err != nil || intPort < 1 || intPort > 65535 {
+		return fmt.Errorf("invalid port: %s", port)
+	}
+
+	ip, _, _ := net.SplitHostPort(t.Server.Addr)
+	t.Server.Addr = net.JoinHostPort(ip, port)
+
+	return nil
+}
+
+func (t *DefaultServer) SetListenType(typ string) error {
+	switch typ {
+	case "http":
+		t.ListenType = ListenTypeHttp
+	default:
+		return fmt.Errorf("invalid type: %s", typ)
+	}
+
+	return nil
+}
+
+func (t *DefaultServer) SetErrorLog(filename string) error {
+	file, err := os.Create(filename)
 	if err != nil {
-		return err
+		return fmt.Errorf("can't open error log file: %s", filename)
 	}
 
-	return t.SetFromConfig(*config)
+	t.ErrorLog = log.New(file, "", log.Ldate|log.Ltime|log.Lmicroseconds)
+
+	return nil
 }
 
-func (t *ServerBuilder) Build() Server {
-	ipStr := ""
-	if t.ListenIp != nil {
-		ipStr = t.ListenIp.String()
+func (t *DefaultServer) SetReadTimeout(timeout string) error {
+	dur, err := time.ParseDuration(timeout)
+	if err != nil {
+		return fmt.Errorf("invalid read timeout: %s", timeout)
 	}
 
-	addr := fmt.Sprintf("%s:%d", ipStr, t.ListenPort)
+	t.Server.ReadTimeout = dur
 
-	errorLog := t.ErrorLog
-	if errorLog == nil {
-		errorLog = log.New(os.Stderr, "", log.Ldate|log.Ltime|log.Lmicroseconds)
-	}
-
-	s := &server{
-		ListenIp:          t.ListenIp,
-		ListenPort:        t.ListenPort,
-		ListenType:        t.ListenType,
-		ErrorLog:          errorLog,
-		ReadTimeout:       t.ReadTimeout,
-		ReadHeaderTimeout: t.ReadHeaderTimeout,
-		WriteTimeout:      t.WriteTimeout,
-		IdleTimeout:       t.IdleTimeout,
-		Handler:           t.Handler,
-
-		Server: http.Server{
-			Addr:              addr,
-			Handler:           &t.Handler,
-			ErrorLog:          errorLog,
-			ReadTimeout:       t.ReadTimeout,
-			ReadHeaderTimeout: t.ReadHeaderTimeout,
-			WriteTimeout:      t.WriteTimeout,
-			IdleTimeout:       t.IdleTimeout,
-		},
-	}
-
-	t.Handler.setServer(s)
-
-	return s
+	return nil
 }
 
-type server struct {
-	ListenIp          net.IP
-	ListenPort        int
-	ListenType        listenType
-	ErrorLog          *log.Logger
-	ReadTimeout       time.Duration
-	ReadHeaderTimeout time.Duration
-	WriteTimeout      time.Duration
-	IdleTimeout       time.Duration
-	Handler           Handler
+func (t *DefaultServer) SetReadHeaderTimeout(timeout string) error {
+	dur, err := time.ParseDuration(timeout)
+	if err != nil {
+		return fmt.Errorf("invalid read header timeout: %s", timeout)
+	}
 
-	http.Server
+	t.Server.ReadHeaderTimeout = dur
+
+	return nil
 }
 
-func (t *server) ListenAndServe() (err error) {
+func (t *DefaultServer) SetWriteTimeout(timeout string) error {
+	dur, err := time.ParseDuration(timeout)
+	if err != nil {
+		return fmt.Errorf("invalid write timeout: %s", timeout)
+	}
+
+	t.Server.WriteTimeout = dur
+
+	return nil
+}
+
+func (t *DefaultServer) SetIdleTimeout(timeout string) error {
+	dur, err := time.ParseDuration(timeout)
+	if err != nil {
+		return fmt.Errorf("invalid idle timeout: %s", timeout)
+	}
+
+	t.Server.IdleTimeout = dur
+
+	return nil
+}
+
+func (t *DefaultServer) LoadConfig(filename string) error {
+	return conf.DefaultDecoder.Decode(t.Config, filename)
+}
+
+func (t *DefaultServer) ListenAndServe() error {
 	switch t.ListenType {
 	case ListenTypeHttp:
-		if err = t.Server.ListenAndServe(); err != http.ErrServerClosed {
-			t.ErrorLog.Println(err)
-		}
+		return t.Server.ListenAndServe()
 	default:
-		err = fmt.Errorf("unavailable listen type: \"%v\"", t.ListenType)
+		return fmt.Errorf("unavailable listen type: %v", t.ListenType)
 	}
-
-	return err
 }

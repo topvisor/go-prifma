@@ -3,6 +3,7 @@ package conf
 import (
 	"bufio"
 	"bytes"
+	"fmt"
 	"os"
 	"path/filepath"
 )
@@ -26,6 +27,9 @@ func (t *Decoder) Decode(base Block, globs ...string) error {
 		filenames, err := filepath.Glob(glob)
 		if err != nil {
 			return err
+		}
+		if len(filenames) == 0 {
+			return fmt.Errorf("config file not found: '%s'", glob)
 		}
 
 		for _, filename := range filenames {

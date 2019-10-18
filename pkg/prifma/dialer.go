@@ -1,92 +1,93 @@
 package prifma
 
 import (
-	"fmt"
+	"context"
+	"errors"
+	"github.com/topvisor/prifma/pkg/utils"
 	"net"
-	"net/url"
 )
 
-// dialer is a net.Dialer which select a suitable outgoing ip address depending on a request's destination domain
-// lIpV4 and lIpV6 set a ip addresses from which to select
-type dialer struct {
-	lIpV4 net.IP
-	lIpV6 net.IP
+var ErrOutgoingIpNotDefined = errors.New("outgoing ip address wasn't defined")
+
+type Dialer interface {
+	GetIpV4() net.IP
+	GetIpV6() net.IP
+	GetLocalIp(hostname string) (net.IP, error)
+
+	SetIpV4(ip net.IP)
+	SetIpV6(ip net.IP)
+
+	DialContext(ctx context.Context, network, address string) (net.Conn, error)
 }
 
-// connect connects to the url
-func (t *dialer) connect(url *url.URL) (net.Conn, error) {
-	host := url.Hostname()
-	if host == "" {
-		return nil, fmt.Errorf("unavailable url: \"%s\"", url.String())
-	}
+func NewDialer() Dialer {
+	return new(DefaultDialer)
+}
 
-	port := url.Port()
-	if port == "" {
-		switch url.Scheme {
-		case "http":
-			fallthrough
-		case "ws":
-			port = "80"
-		case "tunnel":
-			fallthrough
-		case "wss":
-			port = "443"
-		default:
-			return nil, fmt.Errorf("unavailable url: \"%s\"", url.String())
+type DefaultDialer struct {
+	IpV4   net.IP
+	IpV6   net.IP
+	Dialer net.Dialer
+}
+
+func (t *DefaultDialer) GetIpV4() net.IP {
+	return t.IpV4
+}
+
+func (t *DefaultDialer) GetIpV6() net.IP {
+	return t.IpV6
+}
+
+func (t *DefaultDialer) GetLocalIp(hostname string) (net.IP, error) {
+	var localIp net.IP
+
+	switch true {
+	case t.IpV4 != nil && t.IpV6 != nil:
+		dstIpV4, _, err := utils.LookupIp(hostname)
+		if err != nil {
+			return nil, err
 		}
-	}
 
-	laddr, err := t.selectLAddr(host)
-	if err != nil {
-		return nil, err
-	}
-
-	dialer := &net.Dialer{
-		LocalAddr: laddr,
-	}
-
-	return dialer.Dial("tcp", net.JoinHostPort(host, port))
-}
-
-// selectLAddr select a suitable outgoing ip address depending on a request's destination domain
-func (t *dialer) selectLAddr(host string) (net.Addr, error) {
-	if t.lIpV4 == nil && t.lIpV6 == nil {
-		return nil, nil
-	}
-	if t.lIpV4 != nil && t.lIpV6 == nil {
-		return &net.TCPAddr{IP: t.lIpV4}, nil
-	}
-	if t.lIpV6 != nil && t.lIpV4 == nil {
-		return &net.TCPAddr{IP: t.lIpV6}, nil
-	}
-
-	destIps, err := net.LookupIP(host)
-	if err != nil {
-		return nil, err
-	}
-
-	if len(destIps) > 0 {
-		if destIps[0].To4() != nil {
-			return &net.TCPAddr{IP: t.lIpV4}, nil
+		if dstIpV4 != nil {
+			localIp = t.IpV4
 		} else {
-			return &net.TCPAddr{IP: t.lIpV6}, nil
+			localIp = t.IpV6
 		}
-	} else {
-		return nil, fmt.Errorf("unreachable host: \"%s\"", host)
+	case t.IpV4 != nil:
+		localIp = t.IpV4
+	case t.IpV6 != nil:
+		localIp = t.IpV6
 	}
+
+	if localIp == nil {
+		return nil, ErrOutgoingIpNotDefined
+	}
+
+	return localIp, nil
 }
 
-// ipsString generates a string which represents ip addresses which passed to dialer
-func (t *dialer) ipsString() string {
-	ipV4Str := ""
-	if t.lIpV4 != nil {
-		ipV4Str = t.lIpV4.String()
+func (t *DefaultDialer) SetIpV4(ip net.IP) {
+	t.IpV4 = ip.To4()
+}
+
+func (t *DefaultDialer) SetIpV6(ip net.IP) {
+	t.IpV6 = ip.To16()
+}
+
+func (t *DefaultDialer) DialContext(ctx context.Context, network, address string) (net.Conn, error) {
+	host, _, err := net.SplitHostPort(address)
+	if err != nil {
+		return nil, err
 	}
 
-	ipV6Str := ""
-	if t.lIpV6 != nil {
-		ipV6Str = t.lIpV6.String()
+	localIp, err := t.GetLocalIp(host)
+	if err != nil {
+		return nil, err
 	}
 
-	return fmt.Sprintf("%s:%s", ipV4Str, ipV6Str)
+	t.Dialer.LocalAddr = &net.TCPAddr{
+		IP: localIp,
+	}
+
+	return t.Dialer.DialContext(ctx, network, address)
 }

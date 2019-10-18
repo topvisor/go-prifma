@@ -1,16 +1,16 @@
 package main
 
 import (
-	"github.com/topvisor/prifma/pkg/prifma_new"
-	"github.com/topvisor/prifma/pkg/prifma_new/accesslog"
-	"github.com/topvisor/prifma/pkg/prifma_new/basicauth"
-	"github.com/topvisor/prifma/pkg/prifma_new/blockreq"
-	"github.com/topvisor/prifma/pkg/prifma_new/dumplog"
-	"github.com/topvisor/prifma/pkg/prifma_new/http"
-	"github.com/topvisor/prifma/pkg/prifma_new/outgoingip"
-	"github.com/topvisor/prifma/pkg/prifma_new/proxyreq"
-	"github.com/topvisor/prifma/pkg/prifma_new/tunnel"
-	"github.com/topvisor/prifma/pkg/prifma_new/useipheader"
+	"github.com/topvisor/prifma/pkg/prifma"
+	"github.com/topvisor/prifma/pkg/prifma/accesslog"
+	"github.com/topvisor/prifma/pkg/prifma/basicauth"
+	"github.com/topvisor/prifma/pkg/prifma/blockreq"
+	"github.com/topvisor/prifma/pkg/prifma/dumplog"
+	"github.com/topvisor/prifma/pkg/prifma/http"
+	"github.com/topvisor/prifma/pkg/prifma/outgoingip"
+	"github.com/topvisor/prifma/pkg/prifma/proxyreq"
+	"github.com/topvisor/prifma/pkg/prifma/tunnel"
+	"github.com/topvisor/prifma/pkg/prifma/useipheader"
 )
 
 func main() {
@@ -29,7 +29,7 @@ func main() {
 }
 
 func start(configFilename string) error {
-	server := prifma_new.NewServer(
+	server := prifma.NewServer(
 		dumplog.New(),
 		blockreq.New(),
 		basicauth.New(),
