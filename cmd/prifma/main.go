@@ -9,6 +9,7 @@ import (
 	"github.com/topvisor/prifma/pkg/prifma_new/http"
 	"github.com/topvisor/prifma/pkg/prifma_new/outgoingip"
 	"github.com/topvisor/prifma/pkg/prifma_new/proxyreq"
+	"github.com/topvisor/prifma/pkg/prifma_new/tunnel"
 	"github.com/topvisor/prifma/pkg/prifma_new/useipheader"
 )
 
@@ -36,6 +37,7 @@ func start(configFilename string) error {
 		useipheader.New(),
 		proxyreq.New(),
 		accesslog.New(),
+		tunnel.New(),
 		http.New(),
 	)
 
