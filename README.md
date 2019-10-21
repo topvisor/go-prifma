@@ -15,7 +15,7 @@ $GOPATH/bin/prifma --config /path/to/prifma.conf
 ```
 
 # config
-Пример конфигурации: https://github.com/topvisor/prifma/example/config/config.conf
+Пример конфигурации: https://github.com/topvisor/prifma/blob/master/example/config/prifma.conf
 
 #### include
 Загрузить файлы конфигурации в текущий контекст
