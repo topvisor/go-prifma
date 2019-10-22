@@ -82,5 +82,17 @@ func (t *ResponseReverseProxy) ErrorHandler(rw http.ResponseWriter, req *http.Re
 	case context.Canceled:
 		http.Error(rw, prifma.StatusTextClientClosedRequest, prifma.StatusClientClosedRequest)
 		t.ResponseCode = prifma.StatusClientClosedRequest
+	default:
+		switch err := err.(type) {
+		case *net.OpError:
+			if err.Op == "dial" {
+				http.Error(rw, err.Error(), http.StatusBadGateway)
+				t.ResponseCode = http.StatusBadGateway
+			} else {
+				http.Error(rw, err.Error(), http.StatusInternalServerError)
+				t.ResponseCode = http.StatusInternalServerError
+				t.Error = fmt.Errorf("%d, %s", http.StatusInternalServerError, err.Error())
+			}
+		}
 	}
 }
