@@ -74,6 +74,8 @@ func (t *ResponseReverseProxy) SaveResponse(resp *http.Response) error {
 }
 
 func (t *ResponseReverseProxy) ErrorHandler(rw http.ResponseWriter, req *http.Request, err error) {
+	t.Error = nil
+
 	switch err {
 	case context.DeadlineExceeded:
 		http.Error(rw, http.StatusText(http.StatusGatewayTimeout), http.StatusGatewayTimeout)
