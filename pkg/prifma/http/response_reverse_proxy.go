@@ -68,6 +68,7 @@ func (t *ResponseReverseProxy) GetRAddr() net.Addr {
 
 func (t *ResponseReverseProxy) SaveResponse(resp *http.Response) error {
 	t.ResponseCode = resp.StatusCode
+	t.Error = nil
 
 	return nil
 }
