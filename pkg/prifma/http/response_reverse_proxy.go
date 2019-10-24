@@ -49,6 +49,8 @@ func (t *ResponseReverseProxy) Write(rw http.ResponseWriter, result prifma.Handl
 		),
 	)
 
+	req.RemoteAddr = ""
+
 	reverseProxy.ServeHTTP(rw, req)
 
 	return t.Error
