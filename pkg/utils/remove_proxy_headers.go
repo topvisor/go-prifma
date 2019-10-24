@@ -5,7 +5,7 @@ import (
 	"regexp"
 )
 
-var ProxyHeadersRegexp, _ = regexp.Compile("^(?i)prifma-")
+var ProxyHeadersRegexp, _ = regexp.Compile("^(?i)proxy-")
 
 func RemoveProxyHeaders(req *http.Request) {
 	for key := range req.Header {
