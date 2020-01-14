@@ -5,7 +5,7 @@
 Для сборки требуется golang https://golang.org/dl/
 
 ```shell script
-go get -u github.com/topvisor/prifma/cmd/prifma@v0
+go get -u github.com/topvisor/go-prifma/cmd/prifma@v0
 ```
 
 # run
@@ -15,7 +15,7 @@ $GOPATH/bin/prifma --config /path/to/prifma.conf
 ```
 
 # config
-Пример конфигурации: https://github.com/topvisor/prifma/blob/master/example/config/prifma.conf
+Пример конфигурации: https://github.com/topvisor/go-prifma/blob/master/example/config/prifma.conf
 
 #### include
 Загрузить файлы конфигурации в текущий контекст
