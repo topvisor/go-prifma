@@ -1,7 +1,7 @@
 package blockreq
 
 import (
-	"github.com/topvisor/prifma/pkg/prifma"
+	"github.com/topvisor/go-prifma/pkg/prifma"
 	"net"
 	"net/http"
 )

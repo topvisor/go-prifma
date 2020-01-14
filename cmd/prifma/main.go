@@ -1,16 +1,16 @@
 package main
 
 import (
-	"github.com/topvisor/prifma/pkg/prifma"
-	"github.com/topvisor/prifma/pkg/prifma/accesslog"
-	"github.com/topvisor/prifma/pkg/prifma/basicauth"
-	"github.com/topvisor/prifma/pkg/prifma/blockreq"
-	"github.com/topvisor/prifma/pkg/prifma/dumplog"
-	"github.com/topvisor/prifma/pkg/prifma/http"
-	"github.com/topvisor/prifma/pkg/prifma/outgoingip"
-	"github.com/topvisor/prifma/pkg/prifma/proxyreq"
-	"github.com/topvisor/prifma/pkg/prifma/tunnel"
-	"github.com/topvisor/prifma/pkg/prifma/useipheader"
+	"github.com/topvisor/go-prifma/pkg/prifma"
+	"github.com/topvisor/go-prifma/pkg/prifma/accesslog"
+	"github.com/topvisor/go-prifma/pkg/prifma/basicauth"
+	"github.com/topvisor/go-prifma/pkg/prifma/blockreq"
+	"github.com/topvisor/go-prifma/pkg/prifma/dumplog"
+	"github.com/topvisor/go-prifma/pkg/prifma/http"
+	"github.com/topvisor/go-prifma/pkg/prifma/outgoingip"
+	"github.com/topvisor/go-prifma/pkg/prifma/proxyreq"
+	"github.com/topvisor/go-prifma/pkg/prifma/tunnel"
+	"github.com/topvisor/go-prifma/pkg/prifma/useipheader"
 )
 
 func main() {

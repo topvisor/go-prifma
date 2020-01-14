@@ -2,7 +2,7 @@ package prifma
 
 import (
 	"fmt"
-	"github.com/topvisor/prifma/pkg/conf"
+	"github.com/topvisor/go-prifma/pkg/conf"
 	"log"
 	"net"
 	"net/http"

@@ -2,8 +2,8 @@ package http
 
 import (
 	"bytes"
-	"github.com/topvisor/prifma/pkg/prifma"
-	"github.com/topvisor/prifma/pkg/utils"
+	"github.com/topvisor/go-prifma/pkg/prifma"
+	"github.com/topvisor/go-prifma/pkg/utils"
 	"net/http"
 	"sync"
 )

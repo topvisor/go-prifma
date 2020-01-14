@@ -1,7 +1,7 @@
 package prifma
 
 import (
-	"github.com/topvisor/prifma/pkg/conf"
+	"github.com/topvisor/go-prifma/pkg/conf"
 	"net/http"
 )
 

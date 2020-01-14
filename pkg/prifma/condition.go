@@ -2,7 +2,7 @@ package prifma
 
 import (
 	"fmt"
-	"github.com/topvisor/prifma/pkg/utils"
+	"github.com/topvisor/go-prifma/pkg/utils"
 	"golang.org/x/net/idna"
 	"net/http"
 	"strings"

@@ -2,8 +2,8 @@ package outgoingip
 
 import (
 	"fmt"
-	"github.com/topvisor/prifma/pkg/conf"
-	"github.com/topvisor/prifma/pkg/prifma"
+	"github.com/topvisor/go-prifma/pkg/conf"
+	"github.com/topvisor/go-prifma/pkg/prifma"
 	"math/rand"
 	"net"
 )

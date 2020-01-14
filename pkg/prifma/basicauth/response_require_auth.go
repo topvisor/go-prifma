@@ -2,7 +2,7 @@ package basicauth
 
 import (
 	auth "github.com/abbot/go-http-auth"
-	"github.com/topvisor/prifma/pkg/prifma"
+	"github.com/topvisor/go-prifma/pkg/prifma"
 	"net"
 	"net/http"
 )
