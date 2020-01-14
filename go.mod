@@ -1,4 +1,4 @@
-module github.com/topvisor/prifma
+module github.com/topvisor/go-prifma
 
 go 1.13
 
