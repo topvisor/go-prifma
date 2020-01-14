@@ -42,9 +42,9 @@ func (t *AccessLog) AfterWriteResponse(req *http.Request, resp prifma.Response) 
 		return nil
 	}
 
-	var user *string
+	var user = "<nil>"
 	if username, _, ok := utils.ProxyBasicAuth(req); ok {
-		user = &username
+		user = username
 	}
 
 	t.Logger.Printf(
