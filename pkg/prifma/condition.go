@@ -27,6 +27,8 @@ func NewCondition(key string, typ string, val string) (Condition, error) {
 		return NewConditionDstUrl(tester), nil
 	case strings.HasPrefix(key, "header_"):
 		return NewConditionHeader(tester, key), nil
+	case key == "user":
+		return NewConditionUser(tester), nil
 	}
 
 	return nil, fmt.Errorf("unavailable condition key: '%s'", key)
@@ -103,4 +105,20 @@ func (t *ConditionHeader) Test(req *http.Request) bool {
 	header := req.Header.Get(t.Name)
 
 	return t.Tester.Test(header)
+}
+
+type ConditionUser struct {
+	Tester ConditionTester
+}
+
+func NewConditionUser(tester ConditionTester) Condition {
+	return &ConditionUser{
+		Tester: tester,
+	}
+}
+
+func (t *ConditionUser) Test(req *http.Request) bool {
+	user, _, _ := utils.ProxyBasicAuth(req)
+
+	return t.Tester.Test(user)
 }
