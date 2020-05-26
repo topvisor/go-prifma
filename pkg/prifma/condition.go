@@ -23,6 +23,8 @@ func NewCondition(key string, typ string, val string) (Condition, error) {
 		return NewConditionSrcIp(tester), nil
 	case key == "dst_domain":
 		return NewConditionDstDomain(tester), nil
+	case key == "dst_url":
+		return NewConditionDstUrl(tester), nil
 	case strings.HasPrefix(key, "header_"):
 		return NewConditionHeader(tester, key), nil
 	}
@@ -61,6 +63,25 @@ func (t *ConditionDstDomain) Test(req *http.Request) bool {
 	}
 
 	return t.Tester.Test(host)
+}
+
+type ConditionDstUrl struct {
+	Tester ConditionTester
+}
+
+func NewConditionDstUrl(tester ConditionTester) Condition {
+	return &ConditionDstUrl{
+		Tester: tester,
+	}
+}
+
+func (t *ConditionDstUrl) Test(req *http.Request) bool {
+	url, err := idna.ToUnicode(req.URL.String())
+	if err != nil {
+		return false
+	}
+
+	return t.Tester.Test(url)
 }
 
 type ConditionHeader struct {

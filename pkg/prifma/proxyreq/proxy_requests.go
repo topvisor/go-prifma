@@ -81,5 +81,5 @@ func (t *UseIpHeader) CallBlock(command conf.Command) (conf.Block, error) {
 		return nil, err
 	}
 
-	return nil, conf.NewErrCommand(command)
+	return NewConfBlock(&t.ProxyHeader), nil
 }

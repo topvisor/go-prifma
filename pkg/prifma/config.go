@@ -12,7 +12,7 @@ type ConfigMain struct {
 func NewConfigMain(server Server) conf.Block {
 	return &ConfigMain{
 		ConfigServer: NewConfigServer(server),
-		ConfigModule: NewConfigModule(server),
+		ConfigModule: NewConfigModule(server.GetModulesManager()),
 	}
 }
 
@@ -77,19 +77,19 @@ func (t *ConfigServer) CallBlock(command conf.Command) (conf.Block, error) {
 }
 
 type ConfigModule struct {
-	Server Server
-	Conds  []Condition
+	ModulesManager ModulesManager
+	Conds          []Condition
 }
 
-func NewConfigModule(server Server) conf.Block {
+func NewConfigModule(modulesManager ModulesManager) conf.Block {
 	return &ConfigModule{
-		Server: server,
-		Conds:  make([]Condition, 0),
+		ModulesManager: modulesManager,
+		Conds:          make([]Condition, 0),
 	}
 }
 
 func (t *ConfigModule) Call(command conf.Command) error {
-	module := t.Server.GetModulesManager().GetModule(command.GetName(), t.Conds...)
+	module := t.ModulesManager.GetModule(command.GetName(), t.Conds...)
 	if module == nil {
 		return conf.NewErrCommand(command)
 	}
@@ -102,7 +102,7 @@ func (t *ConfigModule) CallBlock(command conf.Command) (conf.Block, error) {
 		return t.CallCondition(command)
 	}
 
-	module := t.Server.GetModulesManager().GetModule(command.GetName(), t.Conds...)
+	module := t.ModulesManager.GetModule(command.GetName(), t.Conds...)
 	if module == nil {
 		return nil, conf.NewErrCommand(command)
 	}
@@ -122,8 +122,8 @@ func (t *ConfigModule) CallCondition(command conf.Command) (conf.Block, error) {
 	}
 
 	conditionBlock := &ConfigModule{
-		Server: t.Server,
-		Conds:  append(t.Conds, cond),
+		ModulesManager: t.ModulesManager,
+		Conds:          append(t.Conds, cond),
 	}
 
 	return conditionBlock, nil

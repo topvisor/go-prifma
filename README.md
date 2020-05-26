@@ -150,11 +150,12 @@ ip адреса, используемые prifma для запросов (слу
 
 * *Syntax*: **condition** *key* *type* *val* { ... }
 * *Default*: &ndash; 
-* *Context*: proxy_requests
+* *Context*: main, condition
 
 ##### key
 * `src_ip` - ip клиента
 * `dst_domain` - домен, к которому будет выполнен исходящий запрос
+* `dst_url` - url, к которому будет выполнен исходящий запрос
 * `header_*` - заголовок входящего запроса (например `header_user_agent`, `header_cookie`)
 
 ##### type 
