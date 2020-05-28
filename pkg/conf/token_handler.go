@@ -67,6 +67,8 @@ func (t *DefaultTokenHandler) Handle(token Token) (err error) {
 		err = t.HandleOpeningCurlyBracketToken(tokenImpl)
 	case *ClosingCurlyBracketToken:
 		err = t.HandleClosingCurlyBracketToken(tokenImpl)
+	case *BackslashToken:
+		err = t.HandleBackslashToken(tokenImpl)
 	}
 
 	if !t.IsEscapedNow {
