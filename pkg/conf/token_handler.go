@@ -120,9 +120,6 @@ func (t *DefaultTokenHandler) HandleDoubleQuotaToken(token *DoubleQuotaToken) er
 	}
 
 	t.IsDoubleQuotaOpened = !t.IsDoubleQuotaOpened
-	if t.IsDoubleQuotaOpened && t.LastArg == "" {
-		return NewErrParse(t.LineNumber, t.Line)
-	}
 
 	return nil
 }
@@ -139,9 +136,6 @@ func (t *DefaultTokenHandler) HandleSingleQuotaToken(token *SingleQuotaToken) er
 	}
 
 	t.IsSingleQuotaOpened = !t.IsSingleQuotaOpened
-	if t.IsSingleQuotaOpened && t.LastArg == "" {
-		return NewErrParse(t.LineNumber, t.Line)
-	}
 
 	return nil
 }
