@@ -171,7 +171,8 @@ func (t *DefaultTokenHandler) HandleSemicolonToken(token *SemicolonToken) (err e
 	if t.Directive == IncludeDirective {
 		err = t.Decoder.Decode(t.BlockWrapper.Current, t.Args...)
 	} else {
-		err = t.BlockWrapper.Current.Call(NewCommand(t.Directive, t.Args...))
+		err = t.BlockWrapper.Current.Call(NewCommand(t.LineNumber, t.Directive, t.Args...))
+
 	}
 
 	t.Directive = ""
@@ -192,7 +193,7 @@ func (t *DefaultTokenHandler) HandleOpeningCurlyBracketToken(token *OpeningCurly
 	}
 	t.CommitLastArg()
 
-	block, err := t.BlockWrapper.Current.CallBlock(NewCommand(t.Directive, t.Args...))
+	block, err := t.BlockWrapper.Current.CallBlock(NewCommand(t.LineNumber, t.Directive, t.Args...))
 
 	t.BlockWrapper = &BlockWrapper{
 		Parent:  t.BlockWrapper,

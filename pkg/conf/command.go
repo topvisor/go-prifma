@@ -1,23 +1,33 @@
 package conf
 
-import "strings"
+import (
+	"fmt"
+	"strings"
+)
 
 type Command interface {
+	GetLine() int
 	GetName() string
 	GetArgs() []string
 	String() string
 }
 
-func NewCommand(name string, args ...string) Command {
+func NewCommand(line int, name string, args ...string) Command {
 	return &DefaultCommand{
+		Line: line,
 		Name: name,
 		Args: args,
 	}
 }
 
 type DefaultCommand struct {
+	Line int
 	Name string
 	Args []string
+}
+
+func (t *DefaultCommand) GetLine() int {
+	return t.Line
 }
 
 func (t *DefaultCommand) GetName() string {
@@ -34,5 +44,5 @@ func (t *DefaultCommand) String() string {
 		args = "('" + strings.Join(t.Args, "', '") + "')"
 	}
 
-	return t.Name + args
+	return fmt.Sprintf("%s%s (line %d)", t.Name, args, t.Line)
 }

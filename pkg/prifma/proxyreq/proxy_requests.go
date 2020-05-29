@@ -40,7 +40,7 @@ func (t *UseIpHeader) Off() error {
 func (t *UseIpHeader) SetProxyUrl(urlStr string) error {
 	uri, err := url.Parse(urlStr)
 	if err != nil {
-		return fmt.Errorf("wrong proxy url: '%s'", urlStr)
+		return fmt.Errorf("wrong proxy url - '%s'", urlStr)
 	}
 
 	t.Proxy = http.ProxyURL(uri)
@@ -60,8 +60,12 @@ func (t *UseIpHeader) Clone() prifma.Module {
 }
 
 func (t *UseIpHeader) Call(command conf.Command) error {
-	if command.GetName() != ModuleDirective || len(command.GetArgs()) != 1 {
-		return conf.NewErrCommand(command)
+	if command.GetName() != ModuleDirective {
+		return conf.NewErrCommandName(command)
+	}
+
+	if len(command.GetArgs()) != 1 {
+		return conf.NewErrCommandArgsNumber(command)
 	}
 
 	arg := command.GetArgs()[0]
@@ -73,12 +77,16 @@ func (t *UseIpHeader) Call(command conf.Command) error {
 }
 
 func (t *UseIpHeader) CallBlock(command conf.Command) (conf.Block, error) {
-	if command.GetName() != ModuleDirective || len(command.GetArgs()) != 1 {
-		return nil, conf.NewErrCommand(command)
+	if command.GetName() != ModuleDirective {
+		return nil, conf.NewErrCommandName(command)
+	}
+
+	if len(command.GetArgs()) != 1 {
+		return nil, conf.NewErrCommandArgsNumber(command)
 	}
 
 	if err := t.SetProxyUrl(command.GetArgs()[0]); err != nil {
-		return nil, err
+		return nil, conf.NewErrCommand(command, err.Error())
 	}
 
 	return NewConfBlock(&t.ProxyHeader), nil

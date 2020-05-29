@@ -20,7 +20,7 @@ func NewConditionTester(typ string, val string) (ConditionTester, error) {
 		return NewConditionTesterCIDR(val)
 	}
 
-	return nil, fmt.Errorf("unavailable condition type: '%s'", typ)
+	return nil, fmt.Errorf("unavailable condition type - '%s'", typ)
 }
 
 type ConditionTesterEquals struct {

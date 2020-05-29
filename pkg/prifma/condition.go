@@ -31,7 +31,7 @@ func NewCondition(key string, typ string, val string) (Condition, error) {
 		return NewConditionUser(tester), nil
 	}
 
-	return nil, fmt.Errorf("unavailable condition key: '%s'", key)
+	return nil, fmt.Errorf("unavailable condition key - '%s'", key)
 }
 
 type ConditionSrcIp struct {

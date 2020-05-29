@@ -32,9 +32,9 @@ func (t *Tunnel) Clone() prifma.Module {
 }
 
 func (t *Tunnel) Call(command conf.Command) error {
-	return conf.NewErrCommand(command)
+	return conf.NewErrCommandName(command)
 }
 
 func (t *Tunnel) CallBlock(command conf.Command) (conf.Block, error) {
-	return nil, conf.NewErrCommand(command)
+	return nil, conf.NewErrCommandName(command)
 }

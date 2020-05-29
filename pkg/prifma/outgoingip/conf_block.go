@@ -18,10 +18,18 @@ func NewConfBlock(ipArray IpArray) conf.Block {
 	}
 }
 
-func (t *ConfBlock) Call(command conf.Command) error {
-	return t.IpArray.AddIp(command.GetName())
+func (t *ConfBlock) Call(command conf.Command) (err error) {
+	if len(command.GetArgs()) != 0 {
+		return conf.NewErrCommandArgsNumber(command)
+	}
+
+	if err = t.IpArray.AddIp(command.GetName()); err != nil {
+		err = conf.NewErrCommand(command, err.Error())
+	}
+
+	return err
 }
 
 func (t *ConfBlock) CallBlock(command conf.Command) (conf.Block, error) {
-	return nil, conf.NewErrCommand(command)
+	return nil, conf.NewErrCommandMustHaveNoBlock(command)
 }

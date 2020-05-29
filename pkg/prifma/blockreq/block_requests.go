@@ -46,20 +46,26 @@ func (t *BlockRequests) Clone() prifma.Module {
 }
 
 func (t *BlockRequests) Call(command conf.Command) error {
-	if command.GetName() != ModuleDirective || len(command.GetArgs()) != 1 {
-		return conf.NewErrCommand(command)
+	if command.GetName() != ModuleDirective {
+		return conf.NewErrCommandName(command)
 	}
 
-	switch command.GetArgs()[0] {
+	if len(command.GetArgs()) != 1 {
+		return conf.NewErrCommandArgsNumber(command)
+	}
+
+	arg := command.GetArgs()[0]
+
+	switch arg {
 	case "off":
 		return t.Off()
 	case "on":
 		return t.On()
 	}
 
-	return conf.NewErrCommand(command)
+	return conf.NewErrCommandArg(command, arg)
 }
 
 func (t *BlockRequests) CallBlock(command conf.Command) (conf.Block, error) {
-	return nil, conf.NewErrCommand(command)
+	return nil, conf.NewErrCommandMustHaveNoBlock(command)
 }

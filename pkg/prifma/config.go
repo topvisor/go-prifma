@@ -41,7 +41,7 @@ func NewConfigServer(server Server) conf.Block {
 
 func (t *ConfigServer) Call(command conf.Command) error {
 	if len(command.GetArgs()) != 1 {
-		return conf.NewErrCommand(command)
+		return conf.NewErrCommandArgsNumber(command)
 	}
 
 	arg := command.GetArgs()[0]
@@ -65,12 +65,16 @@ func (t *ConfigServer) Call(command conf.Command) error {
 		return t.Server.SetIdleTimeout(arg)
 	}
 
-	return conf.NewErrCommand(command)
+	return conf.NewErrCommandName(command)
 }
 
 func (t *ConfigServer) CallBlock(command conf.Command) (conf.Block, error) {
-	if command.GetName() != "server" || len(command.GetArgs()) != 0 {
-		return nil, conf.NewErrCommand(command)
+	if command.GetName() != "server" {
+		return nil, conf.NewErrCommandName(command)
+	}
+
+	if len(command.GetArgs()) != 0 {
+		return nil, conf.NewErrCommandArgsNumber(command)
 	}
 
 	return t, nil
@@ -91,7 +95,7 @@ func NewConfigModule(modulesManager ModulesManager) conf.Block {
 func (t *ConfigModule) Call(command conf.Command) error {
 	module := t.ModulesManager.GetModule(command.GetName(), t.Conds...)
 	if module == nil {
-		return conf.NewErrCommand(command)
+		return conf.NewErrCommandName(command)
 	}
 
 	return module.Call(command)
@@ -104,7 +108,7 @@ func (t *ConfigModule) CallBlock(command conf.Command) (conf.Block, error) {
 
 	module := t.ModulesManager.GetModule(command.GetName(), t.Conds...)
 	if module == nil {
-		return nil, conf.NewErrCommand(command)
+		return nil, conf.NewErrCommandName(command)
 	}
 
 	return module.CallBlock(command)
@@ -113,12 +117,12 @@ func (t *ConfigModule) CallBlock(command conf.Command) (conf.Block, error) {
 func (t *ConfigModule) CallCondition(command conf.Command) (conf.Block, error) {
 	args := command.GetArgs()
 	if len(args) != 3 {
-		return nil, conf.NewErrCommand(command)
+		return nil, conf.NewErrCommandArgsNumber(command)
 	}
 
 	cond, err := NewCondition(args[0], args[1], args[2])
 	if err != nil {
-		return nil, err
+		return nil, conf.NewErrCommand(command, err.Error())
 	}
 
 	conditionBlock := &ConfigModule{

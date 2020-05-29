@@ -66,7 +66,7 @@ func (t *OutgoingIp) SetIps(ips []string) error {
 func (t *OutgoingIp) AddIp(ipStr string) error {
 	ip := net.ParseIP(ipStr)
 	if ip == nil {
-		return fmt.Errorf("wrong outgoing ip: '%s'", ipStr)
+		return fmt.Errorf("wrong outgoing ip - '%s'", ipStr)
 	}
 
 	if ipV4 := ip.To4(); ipV4 != nil {
@@ -88,21 +88,34 @@ func (t *OutgoingIp) Clone() prifma.Module {
 	return &clone
 }
 
-func (t *OutgoingIp) Call(command conf.Command) error {
-	args := command.GetArgs()
-	if command.GetName() != ModuleDirective || len(args) == 0 {
-		return conf.NewErrCommand(command)
+func (t *OutgoingIp) Call(command conf.Command) (err error) {
+	if command.GetName() != ModuleDirective {
+		return conf.NewErrCommandName(command)
 	}
+
+	args := command.GetArgs()
+	if len(args) == 0 {
+		return conf.NewErrCommandArgsNumber(command)
+	}
+
 	if len(args) == 1 && args[0] == "off" {
 		return t.Off()
 	}
 
-	return t.SetIps(args)
+	if err = t.SetIps(args); err != nil {
+		err = conf.NewErrCommand(command, err.Error())
+	}
+
+	return err
 }
 
 func (t *OutgoingIp) CallBlock(command conf.Command) (conf.Block, error) {
-	if command.GetName() != ModuleDirective || len(command.GetArgs()) != 0 {
-		return nil, conf.NewErrCommand(command)
+	if command.GetName() != ModuleDirective {
+		return nil, conf.NewErrCommandName(command)
+	}
+
+	if len(command.GetArgs()) != 0 {
+		return nil, conf.NewErrCommandArgsNumber(command)
 	}
 
 	return NewConfBlock(t), nil

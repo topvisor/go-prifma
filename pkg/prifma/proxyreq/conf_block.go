@@ -20,8 +20,12 @@ func NewConfBlock(header *http.Header) conf.Block {
 func (t *ConfBlock) Call(command conf.Command) error {
 	args := command.GetArgs()
 
-	if command.GetName() != ModuleBlockDirective || len(args) != 2 {
-		return conf.NewErrCommand(command)
+	if command.GetName() != ModuleBlockDirective {
+		return conf.NewErrCommandName(command)
+	}
+
+	if len(args) != 2 {
+		return conf.NewErrCommandArgsNumber(command)
 	}
 
 	key := args[0]
@@ -37,5 +41,5 @@ func (t *ConfBlock) Call(command conf.Command) error {
 }
 
 func (t *ConfBlock) CallBlock(command conf.Command) (conf.Block, error) {
-	return nil, conf.NewErrCommand(command)
+	return nil, conf.NewErrCommandMustHaveNoBlock(command)
 }

@@ -59,9 +59,9 @@ func (t *Http) Clone() prifma.Module {
 }
 
 func (t *Http) Call(command conf.Command) error {
-	return conf.NewErrCommand(command)
+	return conf.NewErrCommandName(command)
 }
 
 func (t *Http) CallBlock(command conf.Command) (conf.Block, error) {
-	return nil, conf.NewErrCommand(command)
+	return nil, conf.NewErrCommandName(command)
 }
