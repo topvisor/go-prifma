@@ -39,7 +39,7 @@ func NewConfigServer(server Server) conf.Block {
 	}
 }
 
-func (t *ConfigServer) Call(command conf.Command) error {
+func (t *ConfigServer) Call(command conf.Command) (err error) {
 	if len(command.GetArgs()) != 1 {
 		return conf.NewErrCommandArgsNumber(command)
 	}
@@ -48,24 +48,34 @@ func (t *ConfigServer) Call(command conf.Command) error {
 
 	switch command.GetName() {
 	case "listen_ip":
-		return t.Server.SetListenIp(arg)
+		err = t.Server.SetListenIp(arg)
 	case "listen_port":
-		return t.Server.SetListenPort(arg)
+		err = t.Server.SetListenPort(arg)
 	case "listen_schema":
-		return t.Server.SetListenType(arg)
+		err = t.Server.SetListenType(arg)
+	case "cert_file":
+		t.Server.SetCertFile(arg)
+	case "key_file":
+		t.Server.SetKeyFile(arg)
 	case "error_log":
-		return t.Server.SetErrorLog(arg)
+		err = t.Server.SetErrorLog(arg)
 	case "read_timeout":
-		return t.Server.SetReadTimeout(arg)
+		err = t.Server.SetReadTimeout(arg)
 	case "read_header_timeout":
-		return t.Server.SetReadHeaderTimeout(arg)
+		err = t.Server.SetReadHeaderTimeout(arg)
 	case "write_timeout":
-		return t.Server.SetWriteTimeout(arg)
+		err = t.Server.SetWriteTimeout(arg)
 	case "idle_timeout":
-		return t.Server.SetIdleTimeout(arg)
+		err = t.Server.SetIdleTimeout(arg)
+	default:
+		return conf.NewErrCommandName(command)
 	}
 
-	return conf.NewErrCommandName(command)
+	if err != nil {
+		err = conf.NewErrCommand(command, err.Error())
+	}
+
+	return err
 }
 
 func (t *ConfigServer) CallBlock(command conf.Command) (conf.Block, error) {

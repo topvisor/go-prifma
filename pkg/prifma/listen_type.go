@@ -4,4 +4,5 @@ type ListenType byte
 
 const (
 	ListenTypeHttp ListenType = iota
+	ListenTypeHttps
 )

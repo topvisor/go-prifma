@@ -5,7 +5,7 @@
 Для сборки требуется golang https://golang.org/dl/
 
 ```shell script
-go get -u github.com/topvisor/go-prifma/cmd/prifma@v0
+go get -u github.com/topvisor/go-prifma/cmd/prifma@v0.3.8
 ```
 
 # run
@@ -48,8 +48,22 @@ $GOPATH/bin/prifma --config /path/to/prifma.conf
 #### listen_schema
 Тип сервера
 
-* *Syntax*: **listen_schema** http;
+* *Syntax*: **listen_schema** http | https;
 * *Default*: listen_schema http;     
+* *Context*: server
+
+##### cert_file
+Указать путь к публичному сертификату сервера. 
+
+* *Syntax*: **cert_file** *path*;
+* *Default*: &ndash;
+* *Context*: server
+
+##### key_file
+Указать путь к приватному сертификату сервера. 
+
+* *Syntax*: **key_file** *path*;
+* *Default*: &ndash;
 * *Context*: server
 
 #### error_log

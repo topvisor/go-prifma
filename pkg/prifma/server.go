@@ -16,6 +16,8 @@ type Server interface {
 	GetListenIp() net.IP
 	GetListenPort() int
 	GetListenType() ListenType
+	GetCertFile() string
+	GetKeyFile() string
 	GetErrorLog() *log.Logger
 	GetReadTimeout() time.Duration
 	GetReadHeaderTimeout() time.Duration
@@ -25,6 +27,8 @@ type Server interface {
 	SetListenIp(ip string) error
 	SetListenPort(port string) error
 	SetListenType(typ string) error
+	SetCertFile(filename string)
+	SetKeyFile(filename string)
 	SetErrorLog(filename string) error
 	SetReadTimeout(timeout string) error
 	SetReadHeaderTimeout(timeout string) error
@@ -53,6 +57,8 @@ type DefaultServer struct {
 	ModulesManager ModulesManager
 	ListenType     ListenType
 	ErrorLog       *log.Logger
+	CertFile       string
+	KeyFile        string
 	Config         conf.Block
 	Server         http.Server
 }
@@ -79,6 +85,14 @@ func (t *DefaultServer) GetListenType() ListenType {
 	return t.ListenType
 }
 
+func (t *DefaultServer) GetCertFile() string {
+	return t.CertFile
+}
+
+func (t *DefaultServer) GetKeyFile() string {
+	return t.KeyFile
+}
+
 func (t *DefaultServer) GetErrorLog() *log.Logger {
 	return t.ErrorLog
 }
@@ -101,7 +115,7 @@ func (t *DefaultServer) GetIdleTimeout() time.Duration {
 
 func (t *DefaultServer) SetListenIp(ip string) error {
 	if net.ParseIP(ip) == nil {
-		return fmt.Errorf("invalid ip: %s", ip)
+		return fmt.Errorf("invalid ip - %s", ip)
 	}
 
 	_, port, _ := net.SplitHostPort(t.Server.Addr)
@@ -112,7 +126,7 @@ func (t *DefaultServer) SetListenIp(ip string) error {
 
 func (t *DefaultServer) SetListenPort(port string) error {
 	if intPort, err := strconv.ParseUint(port, 0, 0); err != nil || intPort < 1 || intPort > 65535 {
-		return fmt.Errorf("invalid port: %s", port)
+		return fmt.Errorf("invalid port - %s", port)
 	}
 
 	ip, _, _ := net.SplitHostPort(t.Server.Addr)
@@ -125,17 +139,27 @@ func (t *DefaultServer) SetListenType(typ string) error {
 	switch typ {
 	case "http":
 		t.ListenType = ListenTypeHttp
+	case "https":
+		t.ListenType = ListenTypeHttps
 	default:
-		return fmt.Errorf("invalid type: %s", typ)
+		return fmt.Errorf("invalid type - %s", typ)
 	}
 
 	return nil
 }
 
+func (t *DefaultServer) SetCertFile(filename string) {
+	t.CertFile = filename
+}
+
+func (t *DefaultServer) SetKeyFile(filename string) {
+	t.KeyFile = filename
+}
+
 func (t *DefaultServer) SetErrorLog(filename string) error {
 	file, err := os.Create(filename)
 	if err != nil {
-		return fmt.Errorf("can't open error log file: %s", filename)
+		return fmt.Errorf("can't open error log file - %s", filename)
 	}
 
 	t.ErrorLog = log.New(file, "", log.Ldate|log.Ltime|log.Lmicroseconds)
@@ -146,7 +170,7 @@ func (t *DefaultServer) SetErrorLog(filename string) error {
 func (t *DefaultServer) SetReadTimeout(timeout string) error {
 	dur, err := time.ParseDuration(timeout)
 	if err != nil {
-		return fmt.Errorf("invalid read timeout: %s", timeout)
+		return fmt.Errorf("invalid read timeout - %s", timeout)
 	}
 
 	t.Server.ReadTimeout = dur
@@ -157,7 +181,7 @@ func (t *DefaultServer) SetReadTimeout(timeout string) error {
 func (t *DefaultServer) SetReadHeaderTimeout(timeout string) error {
 	dur, err := time.ParseDuration(timeout)
 	if err != nil {
-		return fmt.Errorf("invalid read header timeout: %s", timeout)
+		return fmt.Errorf("invalid read header timeout - %s", timeout)
 	}
 
 	t.Server.ReadHeaderTimeout = dur
@@ -168,7 +192,7 @@ func (t *DefaultServer) SetReadHeaderTimeout(timeout string) error {
 func (t *DefaultServer) SetWriteTimeout(timeout string) error {
 	dur, err := time.ParseDuration(timeout)
 	if err != nil {
-		return fmt.Errorf("invalid write timeout: %s", timeout)
+		return fmt.Errorf("invalid write timeout - %s", timeout)
 	}
 
 	t.Server.WriteTimeout = dur
@@ -179,7 +203,7 @@ func (t *DefaultServer) SetWriteTimeout(timeout string) error {
 func (t *DefaultServer) SetIdleTimeout(timeout string) error {
 	dur, err := time.ParseDuration(timeout)
 	if err != nil {
-		return fmt.Errorf("invalid idle timeout: %s", timeout)
+		return fmt.Errorf("invalid idle timeout - %s", timeout)
 	}
 
 	t.Server.IdleTimeout = dur
@@ -195,7 +219,9 @@ func (t *DefaultServer) ListenAndServe() error {
 	switch t.ListenType {
 	case ListenTypeHttp:
 		return t.Server.ListenAndServe()
+	case ListenTypeHttps:
+		return t.Server.ListenAndServeTLS(t.CertFile, t.KeyFile)
 	default:
-		return fmt.Errorf("unavailable listen type: %v", t.ListenType)
+		return fmt.Errorf("unavailable listen type - %v", t.ListenType)
 	}
 }
