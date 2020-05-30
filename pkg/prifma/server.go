@@ -1,6 +1,7 @@
 package prifma
 
 import (
+	"crypto/tls"
 	"fmt"
 	"github.com/topvisor/go-prifma/pkg/conf"
 	"log"
@@ -49,6 +50,7 @@ func NewServer(modules ...Module) Server {
 	t.Config = NewConfigMain(t)
 	t.Server.Handler = NewRequestHandler(t)
 	t.Server.Addr = net.JoinHostPort("0.0.0.0", "3128")
+	t.Server.TLSNextProto = make(map[string]func(*http.Server, *tls.Conn, http.Handler), 0) // disable HTTP/2
 
 	return t
 }
