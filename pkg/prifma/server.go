@@ -104,7 +104,7 @@ func (t *DefaultServer) GetReadTimeout() time.Duration {
 }
 
 func (t *DefaultServer) GetReadHeaderTimeout() time.Duration {
-	return t.Server.ReadTimeout
+	return t.Server.ReadHeaderTimeout
 }
 
 func (t *DefaultServer) GetWriteTimeout() time.Duration {
