@@ -20,7 +20,7 @@ type Dialer interface {
 	DialContext(ctx context.Context, network, address string) (net.Conn, error)
 }
 
-func NewDialer() Dialer {
+func NewDialer() *DefaultDialer {
 	return new(DefaultDialer)
 }
 

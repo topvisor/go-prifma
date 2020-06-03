@@ -13,7 +13,7 @@ type RequestHandler struct {
 	Server Server
 }
 
-func NewRequestHandler(server Server) http.Handler {
+func NewRequestHandler(server Server) *RequestHandler {
 	return &RequestHandler{
 		Server: server,
 	}

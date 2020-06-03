@@ -11,7 +11,7 @@ const ModuleDirective = "tunnel"
 type Tunnel struct {
 }
 
-func New() prifma.Module {
+func New() *Tunnel {
 	return &Tunnel{}
 }
 

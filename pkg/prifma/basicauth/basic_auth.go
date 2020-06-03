@@ -16,7 +16,7 @@ type BasicAuth struct {
 	Users map[string]string
 }
 
-func New() prifma.Module {
+func New() *BasicAuth {
 	return new(BasicAuth)
 }
 

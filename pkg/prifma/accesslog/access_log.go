@@ -16,7 +16,7 @@ type AccessLog struct {
 	Logger *log.Logger
 }
 
-func New() prifma.Module {
+func New() *AccessLog {
 	return new(AccessLog)
 }
 

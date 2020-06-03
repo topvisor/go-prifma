@@ -8,7 +8,7 @@ import (
 
 type ResponseLocked struct{}
 
-func NewResponseLocked() prifma.Response {
+func NewResponseLocked() *ResponseLocked {
 	return new(ResponseLocked)
 }
 

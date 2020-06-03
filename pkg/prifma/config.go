@@ -9,7 +9,7 @@ type ConfigMain struct {
 	ConfigModule conf.Block
 }
 
-func NewConfigMain(server Server) conf.Block {
+func NewConfigMain(server Server) *ConfigMain {
 	return &ConfigMain{
 		ConfigServer: NewConfigServer(server),
 		ConfigModule: NewConfigModule(server.GetModulesManager()),
@@ -33,7 +33,7 @@ type ConfigServer struct {
 	Server Server
 }
 
-func NewConfigServer(server Server) conf.Block {
+func NewConfigServer(server Server) *ConfigServer {
 	return &ConfigServer{
 		Server: server,
 	}
@@ -95,7 +95,7 @@ type ConfigModule struct {
 	Conds          []Condition
 }
 
-func NewConfigModule(modulesManager ModulesManager) conf.Block {
+func NewConfigModule(modulesManager ModulesManager) *ConfigModule {
 	return &ConfigModule{
 		ModulesManager: modulesManager,
 		Conds:          make([]Condition, 0),

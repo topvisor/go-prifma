@@ -11,7 +11,7 @@ type BlockRequests struct {
 	Enabled bool
 }
 
-func New() prifma.Module {
+func New() *BlockRequests {
 	return new(BlockRequests)
 }
 

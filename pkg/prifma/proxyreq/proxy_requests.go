@@ -15,7 +15,7 @@ type UseIpHeader struct {
 	ProxyHeader http.Header
 }
 
-func New() prifma.Module {
+func New() *UseIpHeader {
 	return new(UseIpHeader)
 }
 

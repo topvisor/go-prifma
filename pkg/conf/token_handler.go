@@ -24,7 +24,7 @@ type DefaultTokenHandler struct {
 	IsEscapedNow        bool
 }
 
-func NewTokenHandler(base Block, decoder *Decoder) TokenHandler {
+func NewTokenHandler(base Block, decoder *Decoder) *DefaultTokenHandler {
 	t := &DefaultTokenHandler{
 		BlockWrapper: &BlockWrapper{
 			Current: base,

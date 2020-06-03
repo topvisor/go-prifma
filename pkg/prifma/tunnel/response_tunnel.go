@@ -16,7 +16,7 @@ type ResponseTunnel struct {
 	DstConn      net.Conn
 }
 
-func NewResponseTunnel() prifma.Response {
+func NewResponseTunnel() *ResponseTunnel {
 	return new(ResponseTunnel)
 }
 

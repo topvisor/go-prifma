@@ -27,7 +27,7 @@ type ConditionTesterEquals struct {
 	Value string
 }
 
-func NewConditionTesterEquals(val string) (ConditionTester, error) {
+func NewConditionTesterEquals(val string) (*ConditionTesterEquals, error) {
 	return &ConditionTesterEquals{val}, nil
 }
 
@@ -39,7 +39,7 @@ type ConditionTesterRegexp struct {
 	Regexp *regexp.Regexp
 }
 
-func NewConditionTesterRegexp(val string) (ConditionTester, error) {
+func NewConditionTesterRegexp(val string) (*ConditionTesterRegexp, error) {
 	regex, err := regexp.Compile(val)
 	if err != nil {
 		return nil, err
@@ -56,7 +56,7 @@ type ConditionTesterCIDR struct {
 	Net *net.IPNet
 }
 
-func NewConditionTesterCIDR(val string) (ConditionTester, error) {
+func NewConditionTesterCIDR(val string) (*ConditionTesterCIDR, error) {
 	_, ipNet, err := net.ParseCIDR(val)
 	if err != nil {
 		return nil, err

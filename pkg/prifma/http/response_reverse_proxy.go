@@ -20,7 +20,7 @@ type ResponseReverseProxy struct {
 	RAddr         net.Addr
 }
 
-func NewResponseReverseProxy(roundTrippers RoundTrippersMap) prifma.Response {
+func NewResponseReverseProxy(roundTrippers RoundTrippersMap) *ResponseReverseProxy {
 	return &ResponseReverseProxy{
 		ResponseCode:  http.StatusInternalServerError,
 		Error:         errors.New(http.StatusText(http.StatusInternalServerError)),

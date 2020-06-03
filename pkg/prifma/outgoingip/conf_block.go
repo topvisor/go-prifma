@@ -12,7 +12,7 @@ type ConfBlock struct {
 	IpArray IpArray
 }
 
-func NewConfBlock(ipArray IpArray) conf.Block {
+func NewConfBlock(ipArray IpArray) *ConfBlock {
 	return &ConfBlock{
 		IpArray: ipArray,
 	}

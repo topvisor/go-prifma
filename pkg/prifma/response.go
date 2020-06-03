@@ -18,7 +18,7 @@ type ResponseError struct {
 	Error string
 }
 
-func NewResponseError(code int, error string) Response {
+func NewResponseError(code int, error string) *ResponseError {
 	return &ResponseError{
 		Code:  code,
 		Error: error,

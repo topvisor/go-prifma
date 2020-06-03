@@ -12,7 +12,7 @@ type Command interface {
 	String() string
 }
 
-func NewCommand(line int, name string, args ...string) Command {
+func NewCommand(line int, name string, args ...string) *DefaultCommand {
 	return &DefaultCommand{
 		Line: line,
 		Name: name,

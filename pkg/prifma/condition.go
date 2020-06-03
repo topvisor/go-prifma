@@ -38,7 +38,7 @@ type ConditionSrcIp struct {
 	Tester ConditionTester
 }
 
-func NewConditionSrcIp(tester ConditionTester) Condition {
+func NewConditionSrcIp(tester ConditionTester) *ConditionSrcIp {
 	return &ConditionSrcIp{
 		Tester: tester,
 	}
@@ -52,7 +52,7 @@ type ConditionDstDomain struct {
 	Tester ConditionTester
 }
 
-func NewConditionDstDomain(tester ConditionTester) Condition {
+func NewConditionDstDomain(tester ConditionTester) *ConditionDstDomain {
 	return &ConditionDstDomain{
 		Tester: tester,
 	}
@@ -71,7 +71,7 @@ type ConditionDstUrl struct {
 	Tester ConditionTester
 }
 
-func NewConditionDstUrl(tester ConditionTester) Condition {
+func NewConditionDstUrl(tester ConditionTester) *ConditionDstUrl {
 	return &ConditionDstUrl{
 		Tester: tester,
 	}
@@ -91,7 +91,7 @@ type ConditionHeader struct {
 	Name   string
 }
 
-func NewConditionHeader(tester ConditionTester, key string) Condition {
+func NewConditionHeader(tester ConditionTester, key string) *ConditionHeader {
 	name := strings.Replace(key, "header_", "", 1)
 	name = strings.ReplaceAll(name, "_", "-")
 
@@ -111,7 +111,7 @@ type ConditionUser struct {
 	Tester ConditionTester
 }
 
-func NewConditionUser(tester ConditionTester) Condition {
+func NewConditionUser(tester ConditionTester) *ConditionUser {
 	return &ConditionUser{
 		Tester: tester,
 	}

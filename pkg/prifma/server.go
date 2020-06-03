@@ -40,7 +40,7 @@ type Server interface {
 	ListenAndServe() error
 }
 
-func NewServer(modules ...Module) Server {
+func NewServer(modules ...Module) *DefaultServer {
 	t := &DefaultServer{
 		ModulesManager: NewModulesManager(modules...),
 		ListenType:     ListenTypeHttp,

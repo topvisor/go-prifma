@@ -7,7 +7,7 @@ type ModulesManager interface {
 	GetModulesForRequest(req *http.Request) []Module
 }
 
-func NewModulesManager(modules ...Module) ModulesManager {
+func NewModulesManager(modules ...Module) *DefaultModulesManager {
 	mainModulesMap := make(map[string]int, len(modules))
 	for i, module := range modules {
 		mainModulesMap[module.GetDirective()] = i

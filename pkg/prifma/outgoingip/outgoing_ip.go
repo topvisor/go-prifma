@@ -15,7 +15,7 @@ type OutgoingIp struct {
 	IpsV6 []net.IP
 }
 
-func New() prifma.Module {
+func New() *OutgoingIp {
 	return &OutgoingIp{
 		IpsV4: make([]net.IP, 0),
 		IpsV6: make([]net.IP, 0),

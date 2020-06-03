@@ -9,7 +9,7 @@ type ErrParse struct {
 	Data string
 }
 
-func NewErrParse(line int, data string) error {
+func NewErrParse(line int, data string) *ErrParse {
 	return &ErrParse{
 		Line: line,
 		Data: data,
@@ -25,30 +25,30 @@ type ErrCommand struct {
 	Message string
 }
 
-func NewErrCommand(command Command, message string) error {
+func NewErrCommand(command Command, message string) *ErrCommand {
 	return &ErrCommand{
 		Command: command,
 		Message: message,
 	}
 }
 
-func NewErrCommandArgsNumber(command Command) error {
+func NewErrCommandArgsNumber(command Command) *ErrCommand {
 	return NewErrCommand(command, "wrong arguments number")
 }
 
-func NewErrCommandArg(command Command, arg string) error {
+func NewErrCommandArg(command Command, arg string) *ErrCommand {
 	return NewErrCommand(command, "wrong argument - "+arg)
 }
 
-func NewErrCommandName(command Command) error {
+func NewErrCommandName(command Command) *ErrCommand {
 	return NewErrCommand(command, "wrong directive name")
 }
 
-func NewErrCommandMustHaveBlock(command Command) error {
+func NewErrCommandMustHaveBlock(command Command) *ErrCommand {
 	return NewErrCommand(command, "directive must have block ({})")
 }
 
-func NewErrCommandMustHaveNoBlock(command Command) error {
+func NewErrCommandMustHaveNoBlock(command Command) *ErrCommand {
 	return NewErrCommand(command, "directive must have no block ({})")
 }
 

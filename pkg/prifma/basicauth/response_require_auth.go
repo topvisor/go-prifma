@@ -11,7 +11,7 @@ type ResponseRequireAuth struct {
 	Request *http.Request
 }
 
-func NewResponseRequireAuth(req *http.Request) prifma.Response {
+func NewResponseRequireAuth(req *http.Request) *ResponseRequireAuth {
 	return &ResponseRequireAuth{
 		Request: req,
 	}

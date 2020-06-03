@@ -26,7 +26,7 @@ type HandleRequestResult interface {
 	GetRoundTripper() http.RoundTripper
 }
 
-func NewHandleRequestResult(req *http.Request, server Server) HandleRequestResult {
+func NewHandleRequestResult(req *http.Request, server Server) *DefaultHandleRequestResult {
 	t := &DefaultHandleRequestResult{
 		Server:  server,
 		Request: req,

@@ -17,7 +17,7 @@ type SyncRoundTrippersMap struct {
 	RoundTrippers map[RoundTripperKey]http.RoundTripper
 }
 
-func NewSyncRoundTrippersMap() RoundTrippersMap {
+func NewSyncRoundTrippersMap() *SyncRoundTrippersMap {
 	return &SyncRoundTrippersMap{
 		RWMutex:       new(sync.RWMutex),
 		RoundTrippers: make(map[RoundTripperKey]http.RoundTripper),

@@ -17,7 +17,7 @@ type DumpLog struct {
 	Logger *log.Logger
 }
 
-func New() prifma.Module {
+func New() *DumpLog {
 	return new(DumpLog)
 }
 

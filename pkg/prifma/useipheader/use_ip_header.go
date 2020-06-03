@@ -17,7 +17,7 @@ type UseIpHeader struct {
 	Enabled bool
 }
 
-func New() prifma.Module {
+func New() *UseIpHeader {
 	return new(UseIpHeader)
 }
 

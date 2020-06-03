@@ -13,7 +13,7 @@ type Http struct {
 	RoundTrippers RoundTrippersMap
 }
 
-func New() prifma.Module {
+func New() *Http {
 	return &Http{
 		RoundTrippers: NewSyncRoundTrippersMap(),
 	}

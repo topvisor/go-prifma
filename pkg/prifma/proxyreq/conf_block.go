@@ -11,7 +11,7 @@ type ConfBlock struct {
 	Header *http.Header
 }
 
-func NewConfBlock(header *http.Header) conf.Block {
+func NewConfBlock(header *http.Header) *ConfBlock {
 	return &ConfBlock{
 		Header: header,
 	}
