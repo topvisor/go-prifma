@@ -11,9 +11,11 @@ import (
 const DefaultSplitChars = "\r\n\t\f\v #\"';{}\\"
 
 var DefaultDecoder = &Decoder{
-	SplitChars:          DefaultSplitChars,
-	TokenFactory:        DefaultTokenFactory,
-	TokenHandlerFactory: NewTokenHandler,
+	SplitChars:   DefaultSplitChars,
+	TokenFactory: DefaultTokenFactory,
+	TokenHandlerFactory: func(base Block, decoder *Decoder) TokenHandler {
+		return NewTokenHandler(base, decoder)
+	},
 }
 
 type Decoder struct {
