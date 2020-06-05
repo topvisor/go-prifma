@@ -91,7 +91,7 @@ func (t *DefaultTokenHandler) HandleWhitespaceToken(token *WhitespaceToken) erro
 		return nil
 	}
 
-	t.CommitLastArg()
+	t.CommitLastArg(false)
 
 	return nil
 }
@@ -120,6 +120,9 @@ func (t *DefaultTokenHandler) HandleDoubleQuotaToken(token *DoubleQuotaToken) er
 	}
 
 	t.IsDoubleQuotaOpened = !t.IsDoubleQuotaOpened
+	if !t.IsDoubleQuotaOpened {
+		t.CommitLastArg(false)
+	}
 
 	return nil
 }
@@ -136,6 +139,9 @@ func (t *DefaultTokenHandler) HandleSingleQuotaToken(token *SingleQuotaToken) er
 	}
 
 	t.IsSingleQuotaOpened = !t.IsSingleQuotaOpened
+	if !t.IsSingleQuotaOpened {
+		t.CommitLastArg(false)
+	}
 
 	return nil
 }
@@ -166,13 +172,12 @@ func (t *DefaultTokenHandler) HandleSemicolonToken(token *SemicolonToken) (err e
 	if t.IsCallCommitted() {
 		return NewErrParse(t.LineNumber, t.Line)
 	}
-	t.CommitLastArg()
+	t.CommitLastArg(false)
 
 	if t.Directive == IncludeDirective {
 		err = t.Decoder.Decode(t.BlockWrapper.Current, t.Args...)
 	} else {
 		err = t.BlockWrapper.Current.Call(NewCommand(t.LineNumber, t.Directive, t.Args...))
-
 	}
 
 	t.Directive = ""
@@ -191,7 +196,7 @@ func (t *DefaultTokenHandler) HandleOpeningCurlyBracketToken(token *OpeningCurly
 	if t.IsCallCommitted() {
 		return NewErrParse(t.LineNumber, t.Line)
 	}
-	t.CommitLastArg()
+	t.CommitLastArg(false)
 
 	block, err := t.BlockWrapper.Current.CallBlock(NewCommand(t.LineNumber, t.Directive, t.Args...))
 
@@ -244,8 +249,8 @@ func (t *DefaultTokenHandler) IsStringEscaped() bool {
 	return t.IsDoubleQuotaOpened || t.IsSingleQuotaOpened || t.IsEscaped
 }
 
-func (t *DefaultTokenHandler) CommitLastArg() {
-	if t.LastArg != "" {
+func (t *DefaultTokenHandler) CommitLastArg(commitEmptyArg bool) {
+	if t.LastArg != "" || commitEmptyArg {
 		if t.Directive == "" {
 			t.Directive = t.LastArg
 		} else {
