@@ -121,7 +121,7 @@ func (t *DefaultTokenHandler) HandleDoubleQuotaToken(token *DoubleQuotaToken) er
 
 	t.IsDoubleQuotaOpened = !t.IsDoubleQuotaOpened
 	if !t.IsDoubleQuotaOpened {
-		t.CommitLastArg(false)
+		t.CommitLastArg(true)
 	}
 
 	return nil
@@ -140,7 +140,7 @@ func (t *DefaultTokenHandler) HandleSingleQuotaToken(token *SingleQuotaToken) er
 
 	t.IsSingleQuotaOpened = !t.IsSingleQuotaOpened
 	if !t.IsSingleQuotaOpened {
-		t.CommitLastArg(false)
+		t.CommitLastArg(true)
 	}
 
 	return nil
