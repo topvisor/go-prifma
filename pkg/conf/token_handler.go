@@ -288,8 +288,6 @@ func (t *DefaultTokenHandler) HandleBackslashToken(token *BackslashToken) error 
 	}
 
 	if t.IsBackslashed {
-		t.IsBackslashed = false
-
 		return t.HandleTokenAsString(token)
 	}
 
