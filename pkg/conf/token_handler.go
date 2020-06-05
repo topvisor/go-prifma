@@ -1,6 +1,8 @@
 package conf
 
-import "strconv"
+import (
+	"github.com/topvisor/go-prifma/pkg/utils"
+)
 
 const IncludeDirective = "include"
 
@@ -309,13 +311,7 @@ func (t *DefaultTokenHandler) CommitLastArg(commitEmptyArg bool) (err error) {
 	if t.Directive == "" {
 		t.Directive = t.LastArg
 	} else if t.LastArg != "" || commitEmptyArg {
-		arg := "\"" + t.LastArg + "\""
-
-		if arg, err = strconv.Unquote(arg); err != nil {
-			return NewErrParse(t.LineNumber, t.Line, err.Error())
-		}
-
-		t.Args = append(t.Args, arg)
+		t.Args = append(t.Args, utils.UnescapeString(t.LastArg))
 	}
 
 	t.LastArg = ""
