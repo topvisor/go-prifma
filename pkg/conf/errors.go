@@ -5,19 +5,21 @@ import (
 )
 
 type ErrParse struct {
-	Line int
-	Data string
+	LineNumber int
+	Line       string
+	Message    string
 }
 
-func NewErrParse(line int, data string) *ErrParse {
+func NewErrParse(lineNumber int, line string, message string) *ErrParse {
 	return &ErrParse{
-		Line: line,
-		Data: data,
+		LineNumber: lineNumber,
+		Line:       line,
+		Message:    message,
 	}
 }
 
 func (t *ErrParse) Error() string {
-	return fmt.Sprintf("parse error(line %d): %s", t.Line, t.Data)
+	return fmt.Sprintf("parse error - %s (line %d): %s", t.Message, t.LineNumber, t.Line)
 }
 
 type ErrCommand struct {

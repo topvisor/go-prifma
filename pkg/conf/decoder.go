@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"bytes"
 	"fmt"
+	"github.com/topvisor/go-prifma/pkg/utils"
 	"os"
 	"path/filepath"
 )
@@ -49,7 +50,8 @@ func (t *Decoder) decode(base Block, filename string) error {
 	if err != nil {
 		return err
 	}
-	defer file.Close()
+
+	defer utils.CloseFile(file)
 
 	handler := t.TokenHandlerFactory(base, t)
 

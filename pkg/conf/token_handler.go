@@ -1,5 +1,7 @@
 package conf
 
+import "strconv"
+
 const IncludeDirective = "include"
 
 type TokenHandlerFactory func(base Block, decoder *Decoder) TokenHandler
@@ -20,8 +22,8 @@ type DefaultTokenHandler struct {
 	IsCommentLine       bool
 	IsDoubleQuotaOpened bool
 	IsSingleQuotaOpened bool
-	IsEscaped           bool
-	IsEscapedNow        bool
+	IsBackslashed       bool
+	IsBackslashedNow    bool
 }
 
 func NewTokenHandler(base Block, decoder *Decoder) *DefaultTokenHandler {
@@ -38,7 +40,7 @@ func NewTokenHandler(base Block, decoder *Decoder) *DefaultTokenHandler {
 }
 
 func (t *DefaultTokenHandler) Handle(token Token) (err error) {
-	t.IsEscapedNow = false
+	t.IsBackslashedNow = false
 
 	if nlToken, ok := token.(*NewlineToken); ok {
 		return t.HandleNewlineToken(nlToken)
@@ -71,57 +73,81 @@ func (t *DefaultTokenHandler) Handle(token Token) (err error) {
 		err = t.HandleBackslashToken(tokenImpl)
 	}
 
-	if !t.IsEscapedNow {
-		t.IsEscaped = false
+	if !t.IsBackslashedNow {
+		t.IsBackslashed = false
 	}
 
 	return err
 }
 
+func (t *DefaultTokenHandler) HandleTokenAsString(token Token) error {
+	return t.HandleStringToken(&StringToken{data: token.String()})
+}
+
 func (t *DefaultTokenHandler) HandleStringToken(token *StringToken) error {
+	if t.IsBackslashed {
+		t.IsBackslashed = false
+
+		t.LastArg += new(BackslashToken).String()
+	}
+
 	t.LastArg += token.String()
 
 	return nil
 }
 
 func (t *DefaultTokenHandler) HandleWhitespaceToken(token *WhitespaceToken) error {
-	if t.IsStringEscaped() {
-		t.LastArg += token.String()
-
-		return nil
+	if t.IsQuotaOpened() {
+		return t.HandleTokenAsString(token)
 	}
 
-	t.CommitLastArg(false)
+	if t.IsBackslashed {
+		t.IsBackslashed = false
 
-	return nil
+		return t.HandleTokenAsString(token)
+	}
+
+	return t.CommitLastArg(false)
 }
 
-func (t *DefaultTokenHandler) HandleNewlineToken(token *NewlineToken) error {
-	if !t.IsCallCommitted() || t.IsStringEscaped() {
-		return NewErrParse(t.LineNumber, t.Line)
+func (t *DefaultTokenHandler) HandleNewlineToken(token *NewlineToken) (err error) {
+	if t.IsQuotaOpened() {
+		err = t.HandleTokenAsString(token)
+	} else if t.IsBackslashed {
+		t.IsBackslashed = false
+
+		err = t.HandleTokenAsString(token)
+	} else if !t.IsCallCommitted() {
+		err = NewErrParse(t.LineNumber, t.Line, "unexpected new line")
+	} else {
+		t.IsCommentLine = false
 	}
 
-	t.IsCommentLine = false
 	t.Line = ""
 	t.LineNumber++
 
-	return nil
+	return err
 }
 
 func (t *DefaultTokenHandler) HandleDoubleQuotaToken(token *DoubleQuotaToken) error {
 	if t.Directive == "" {
-		return NewErrParse(t.LineNumber, t.Line)
+		return NewErrParse(t.LineNumber, t.Line, "unexpected double quota")
 	}
 
-	if t.IsSingleQuotaOpened || t.IsEscaped {
-		t.LastArg += token.String()
+	if t.IsSingleQuotaOpened {
+		return t.HandleTokenAsString(token)
+	}
 
-		return nil
+	if t.IsBackslashed {
+		t.IsBackslashed = false
+
+		return t.HandleTokenAsString(token)
 	}
 
 	t.IsDoubleQuotaOpened = !t.IsDoubleQuotaOpened
+
 	if !t.IsDoubleQuotaOpened {
-		t.CommitLastArg(true)
+		return t.CommitLastArg(true)
 	}
 
 	return nil
@@ -129,32 +155,41 @@ func (t *DefaultTokenHandler) HandleDoubleQuotaToken(token *DoubleQuotaToken) er
 
 func (t *DefaultTokenHandler) HandleSingleQuotaToken(token *SingleQuotaToken) error {
 	if t.Directive == "" {
-		return NewErrParse(t.LineNumber, t.Line)
+		return NewErrParse(t.LineNumber, t.Line, "unexpected single quota")
 	}
 
-	if t.IsDoubleQuotaOpened || t.IsEscaped {
-		t.LastArg += token.String()
+	if t.IsDoubleQuotaOpened {
+		return t.HandleTokenAsString(token)
+	}
 
-		return nil
+	if t.IsBackslashed {
+		t.IsBackslashed = false
+
+		return t.HandleTokenAsString(token)
 	}
 
 	t.IsSingleQuotaOpened = !t.IsSingleQuotaOpened
+
 	if !t.IsSingleQuotaOpened {
-		t.CommitLastArg(true)
+		return t.CommitLastArg(true)
 	}
 
 	return nil
 }
 
 func (t *DefaultTokenHandler) HandleHashToken(token *HashToken) error {
-	if t.IsStringEscaped() {
-		t.LastArg += token.String()
+	if t.IsQuotaOpened() {
+		return t.HandleTokenAsString(token)
+	}
 
-		return nil
+	if t.IsBackslashed {
+		t.IsBackslashed = false
+
+		return t.HandleTokenAsString(token)
 	}
 
 	if !t.IsCallCommitted() {
-		return NewErrParse(t.LineNumber, t.Line)
+		return NewErrParse(t.LineNumber, t.Line, "unexpected #")
 	}
 
 	t.IsCommentLine = true
@@ -163,16 +198,23 @@ func (t *DefaultTokenHandler) HandleHashToken(token *HashToken) error {
 }
 
 func (t *DefaultTokenHandler) HandleSemicolonToken(token *SemicolonToken) (err error) {
-	if t.IsStringEscaped() {
-		t.LastArg += token.String()
+	if t.IsQuotaOpened() {
+		return t.HandleTokenAsString(token)
+	}
 
-		return nil
+	if t.IsBackslashed {
+		t.IsBackslashed = false
+
+		return t.HandleTokenAsString(token)
 	}
 
 	if t.IsCallCommitted() {
-		return NewErrParse(t.LineNumber, t.Line)
+		return NewErrParse(t.LineNumber, t.Line, "unexpected semicolon")
 	}
-	t.CommitLastArg(false)
+
+	if err = t.CommitLastArg(false); err != nil {
+		return err
+	}
 
 	if t.Directive == IncludeDirective {
 		err = t.Decoder.Decode(t.BlockWrapper.Current, t.Args...)
@@ -186,17 +228,24 @@ func (t *DefaultTokenHandler) HandleSemicolonToken(token *SemicolonToken) (err e
 	return err
 }
 
-func (t *DefaultTokenHandler) HandleOpeningCurlyBracketToken(token *OpeningCurlyBracketToken) error {
-	if t.IsStringEscaped() {
-		t.LastArg += token.String()
+func (t *DefaultTokenHandler) HandleOpeningCurlyBracketToken(token *OpeningCurlyBracketToken) (err error) {
+	if t.IsQuotaOpened() {
+		return t.HandleTokenAsString(token)
+	}
 
-		return nil
+	if t.IsBackslashed {
+		t.IsBackslashed = false
+
+		return t.HandleTokenAsString(token)
 	}
 
 	if t.IsCallCommitted() {
-		return NewErrParse(t.LineNumber, t.Line)
+		return NewErrParse(t.LineNumber, t.Line, "unexpected opening curly bracket")
 	}
-	t.CommitLastArg(false)
+
+	if err = t.CommitLastArg(false); err != nil {
+		return err
+	}
 
 	block, err := t.BlockWrapper.Current.CallBlock(NewCommand(t.LineNumber, t.Directive, t.Args...))
 
@@ -204,6 +253,7 @@ func (t *DefaultTokenHandler) HandleOpeningCurlyBracketToken(token *OpeningCurly
 		Parent:  t.BlockWrapper,
 		Current: block,
 	}
+
 	t.Directive = ""
 	t.Args = make([]string, 0)
 
@@ -211,14 +261,18 @@ func (t *DefaultTokenHandler) HandleOpeningCurlyBracketToken(token *OpeningCurly
 }
 
 func (t *DefaultTokenHandler) HandleClosingCurlyBracketToken(token *ClosingCurlyBracketToken) error {
-	if t.IsStringEscaped() {
-		t.LastArg += token.String()
+	if t.IsQuotaOpened() {
+		return t.HandleTokenAsString(token)
+	}
 
-		return nil
+	if t.IsBackslashed {
+		t.IsBackslashed = false
+
+		return t.HandleTokenAsString(token)
 	}
 
 	if !t.IsCallCommitted() || t.BlockWrapper.Parent == nil {
-		return NewErrParse(t.LineNumber, t.Line)
+		return NewErrParse(t.LineNumber, t.Line, "unexpected closing curly bracket")
 	}
 
 	t.BlockWrapper = t.BlockWrapper.Parent
@@ -228,35 +282,43 @@ func (t *DefaultTokenHandler) HandleClosingCurlyBracketToken(token *ClosingCurly
 
 func (t *DefaultTokenHandler) HandleBackslashToken(token *BackslashToken) error {
 	if t.Directive == "" {
-		return NewErrParse(t.LineNumber, t.Line)
+		return NewErrParse(t.LineNumber, t.Line, "unexpected backslash")
 	}
 
-	if t.IsEscaped {
-		t.LastArg += token.String()
-	} else {
-		t.IsEscaped = true
-		t.IsEscapedNow = true
+	if t.IsBackslashed {
+		t.IsBackslashed = false
+
+		return t.HandleTokenAsString(token)
 	}
+
+	t.IsBackslashed = true
+	t.IsBackslashedNow = true
 
 	return nil
+}
+
+func (t *DefaultTokenHandler) IsQuotaOpened() bool {
+	return t.IsDoubleQuotaOpened || t.IsSingleQuotaOpened
 }
 
 func (t *DefaultTokenHandler) IsCallCommitted() bool {
 	return t.Directive == "" && t.LastArg == ""
 }
 
-func (t *DefaultTokenHandler) IsStringEscaped() bool {
-	return t.IsDoubleQuotaOpened || t.IsSingleQuotaOpened || t.IsEscaped
-}
+func (t *DefaultTokenHandler) CommitLastArg(commitEmptyArg bool) (err error) {
+	if t.Directive == "" {
+		t.Directive = t.LastArg
+	} else if t.LastArg != "" || commitEmptyArg {
+		arg := "\"" + t.LastArg + "\""
 
-func (t *DefaultTokenHandler) CommitLastArg(commitEmptyArg bool) {
-	if t.LastArg != "" || commitEmptyArg {
-		if t.Directive == "" {
-			t.Directive = t.LastArg
-		} else {
-			t.Args = append(t.Args, t.LastArg)
+		if arg, err = strconv.Unquote(arg); err != nil {
+			return NewErrParse(t.LineNumber, t.Line, err.Error())
 		}
 
-		t.LastArg = ""
+		t.Args = append(t.Args, arg)
 	}
+
+	t.LastArg = ""
+
+	return nil
 }
