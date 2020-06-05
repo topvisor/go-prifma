@@ -7,7 +7,6 @@ import (
 	"github.com/topvisor/go-prifma/pkg/utils"
 	"log"
 	"net/http"
-	"os"
 )
 
 const ModuleDirective = "access_log"
@@ -27,7 +26,7 @@ func (t *AccessLog) Off() error {
 }
 
 func (t *AccessLog) SetFilename(filename string) error {
-	file, err := os.Create(filename)
+	file, err := utils.OpenOrCreateFile(filename)
 	if err != nil {
 		return fmt.Errorf("can't open access log file: '%s'", filename)
 	}

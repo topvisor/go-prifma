@@ -4,6 +4,7 @@ import (
 	"crypto/tls"
 	"fmt"
 	"github.com/topvisor/go-prifma/pkg/conf"
+	"github.com/topvisor/go-prifma/pkg/utils"
 	"log"
 	"net"
 	"net/http"
@@ -159,7 +160,7 @@ func (t *DefaultServer) SetKeyFile(filename string) {
 }
 
 func (t *DefaultServer) SetErrorLog(filename string) error {
-	file, err := os.Create(filename)
+	file, err := utils.OpenOrCreateFile(filename)
 	if err != nil {
 		return fmt.Errorf("can't open error log file - %s", filename)
 	}

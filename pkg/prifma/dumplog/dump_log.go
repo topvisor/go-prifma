@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/topvisor/go-prifma/pkg/conf"
 	"github.com/topvisor/go-prifma/pkg/prifma"
+	"github.com/topvisor/go-prifma/pkg/utils"
 	"log"
 	"net/http"
 	"net/http/httputil"
@@ -43,7 +44,7 @@ func (t *DumpLog) Off() error {
 }
 
 func (t *DumpLog) SetFilename(filename string) error {
-	file, err := os.Create(filename)
+	file, err := utils.OpenOrCreateFile(filename)
 	if err != nil {
 		return fmt.Errorf("can't open dump log file: '%s'", filename)
 	}
