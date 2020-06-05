@@ -6,6 +6,12 @@ import (
 	"unicode/utf8"
 )
 
+/**
+unescaped chars:
+1. \a, \b, \f, \n, \r, \t, \v, \\
+2. \x00, \u0000, \U00000000
+3. \012, \128, ...
+*/
 func UnescapeString(s string) string {
 	if !strings.ContainsRune(s, '\\') && utf8.ValidString(s) {
 		return s
