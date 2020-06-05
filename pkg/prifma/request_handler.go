@@ -30,7 +30,7 @@ func (t *RequestHandler) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 		}
 	}
 
-	result := NewHandleRequestResult(req, t.Server)
+	var result HandleRequestResult = NewHandleRequestResult(req, t.Server)
 
 	for _, module := range modules {
 		if handler, ok := module.(HandleRequestModule); ok {
