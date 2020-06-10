@@ -90,10 +90,15 @@ func (t *ResponseTunnel) ConnectToProxy(result prifma.HandleRequestResult) error
 		return err
 	}
 
+	scheme := result.GetRequest().URL.Scheme
+	if scheme == "" {
+		scheme = "https"
+	}
+
 	proxyRequest := &http.Request{
 		Method: http.MethodConnect,
 		URL: &url.URL{
-			Scheme: result.GetRequest().URL.Scheme,
+			Scheme: scheme,
 			Host:   result.GetRequest().Host,
 		},
 		Proto:      "HTTP/1.1",
