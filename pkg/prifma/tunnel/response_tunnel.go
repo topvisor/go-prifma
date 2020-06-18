@@ -2,6 +2,7 @@ package tunnel
 
 import (
 	"context"
+	"crypto/tls"
 	"encoding/base64"
 	"errors"
 	"github.com/topvisor/go-prifma/pkg/prifma"
@@ -90,30 +91,27 @@ func (t *ResponseTunnel) ConnectToProxy(result prifma.HandleRequestResult) error
 		return err
 	}
 
-	scheme := result.GetRequest().URL.Scheme
-	if scheme == "" {
-		scheme = "https"
-	}
-
-	proxyRequest := &http.Request{
+	req := &http.Request{
 		Method: http.MethodConnect,
 		URL: &url.URL{
-			Scheme: scheme,
+			Scheme: proxyUrl.Scheme,
 			Host:   result.GetRequest().Host,
 		},
-		Proto:      "HTTP/1.1",
-		ProtoMajor: 1,
-		ProtoMinor: 1,
-		Header:     make(http.Header),
-		Host:       result.GetRequest().Host,
+		Header: make(http.Header),
+		Host:   result.GetRequest().Host,
 	}
-	proxyRequest.Header.Set("Host", result.GetRequest().Host)
-	proxyRequest.Header.Set("Proxy-Connection", "keep-alive")
+
+	req.Header.Set("Host", result.GetRequest().Host)
+	req.Header.Set("Proxy-Connection", "keep-alive")
 	if proxyUrl.User != nil {
 		authHash := base64.StdEncoding.EncodeToString([]byte(proxyUrl.User.String()))
-		proxyRequest.Header.Set("Proxy-Authorization", "Basic "+authHash)
+		req.Header.Set("Proxy-Authorization", "Basic "+authHash)
 	}
-	proxyRequest = proxyRequest.WithContext(result.GetRequest().Context())
+	for key, values := range result.GetProxyConnectHeader() {
+		req.Header[key] = values
+	}
+
+	req = req.WithContext(result.GetRequest().Context())
 
 	roundTripper := &http.Transport{
 		DialContext: func(ctx context.Context, network, _ string) (conn net.Conn, err error) {
@@ -122,9 +120,10 @@ func (t *ResponseTunnel) ConnectToProxy(result prifma.HandleRequestResult) error
 			return t.DstConn, err
 		},
 		ResponseHeaderTimeout: result.GetServer().GetWriteTimeout(),
+		TLSNextProto:          make(map[string]func(string, *tls.Conn) http.RoundTripper, 0), // disable HTTP/2
 	}
 
-	resp, err := roundTripper.RoundTrip(proxyRequest)
+	resp, err := roundTripper.RoundTrip(req)
 	if err != nil {
 		return err
 	}
