@@ -10,17 +10,42 @@ type ConditionTester interface {
 	Test(val string) bool
 }
 
-func NewConditionTester(typ string, val string) (ConditionTester, error) {
-	switch typ {
-	case "=":
-		return NewConditionTesterEquals(val)
-	case "~":
-		return NewConditionTesterRegexp(val)
-	case "cidr":
-		return NewConditionTesterCIDR(val)
+func NewConditionTester(typ string, val string) (tester ConditionTester, err error) {
+	isNegation := false
+
+	if typ[0] == '!' {
+		isNegation = true
+		typ = typ[1:]
 	}
 
-	return nil, fmt.Errorf("unavailable condition type - '%s'", typ)
+	switch typ {
+	case "=":
+		tester, err = NewConditionTesterEquals(val)
+	case "~":
+		tester, err = NewConditionTesterRegexp(val)
+	case "cidr":
+		tester, err = NewConditionTesterCIDR(val)
+	default:
+		err = fmt.Errorf("unavailable condition type - '%s'", typ)
+	}
+
+	if err == nil && isNegation {
+		tester = NewConditionTesterNegation(tester)
+	}
+
+	return tester, err
+}
+
+type ConditionTesterNegation struct {
+	Tester ConditionTester
+}
+
+func (t *ConditionTesterNegation) Test(val string) bool {
+	return !t.Tester.Test(val)
+}
+
+func NewConditionTesterNegation(tester ConditionTester) *ConditionTesterNegation {
+	return &ConditionTesterNegation{tester}
 }
 
 type ConditionTesterEquals struct {
