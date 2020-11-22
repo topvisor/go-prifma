@@ -25,7 +25,7 @@ func (t *Http) HandleRequest(result prifma.HandleRequestResult) (prifma.HandleRe
 	}
 
 	dialer := result.GetDialer()
-	host := utils.GetRequestHostname(result.GetRequest())
+	host := utils.GetHostname(result.GetRequest().Host)
 	localIp, err := dialer.GetLocalIp(host)
 	if err != nil {
 		if err == prifma.ErrOutgoingIpNotDefined {

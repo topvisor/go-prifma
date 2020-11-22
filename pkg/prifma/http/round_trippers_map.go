@@ -65,7 +65,7 @@ func NewRoundTripperKey(result prifma.HandleRequestResult) RoundTripperKey {
 		t.ProxyHeader = proxyHeaderBuff.String()
 	}
 
-	host := utils.GetRequestHostname(result.GetRequest())
+	host := utils.GetHostname(result.GetRequest().Host)
 	if localIp, err := result.GetDialer().GetLocalIp(host); err == nil && localIp != nil {
 		t.LocalIp = localIp.String()
 	}

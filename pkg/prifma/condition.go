@@ -59,7 +59,7 @@ func NewConditionDstDomain(tester ConditionTester) *ConditionDstDomain {
 }
 
 func (t *ConditionDstDomain) Test(req *http.Request) bool {
-	host, err := idna.ToUnicode(utils.GetRequestHostname(req))
+	host, err := idna.ToUnicode(utils.GetHostname(req.Host))
 	if err != nil {
 		return false
 	}
