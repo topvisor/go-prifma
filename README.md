@@ -73,6 +73,13 @@ $GOPATH/bin/prifma --config /path/to/prifma.conf
 * *Default*: error_log off;
 * *Context*: server
 
+#### debug_log
+Лог debug
+
+* *Syntax*: **debug_log** *path*;
+* *Default*: debug_log off;
+* *Context*: server
+
 #### read_timeout
 Максимальное время чтения входящего запроса (включая тело запроса)
 

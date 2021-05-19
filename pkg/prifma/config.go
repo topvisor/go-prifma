@@ -59,6 +59,8 @@ func (t *ConfigServer) Call(command conf.Command) (err error) {
 		t.Server.SetKeyFile(arg)
 	case "error_log":
 		err = t.Server.SetErrorLog(arg)
+	case "debug_log":
+		err = t.Server.SetDebugLog(arg)
 	case "read_timeout":
 		err = t.Server.SetReadTimeout(arg)
 	case "read_header_timeout":

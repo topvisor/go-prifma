@@ -21,6 +21,7 @@ type Server interface {
 	GetCertFile() string
 	GetKeyFile() string
 	GetErrorLog() *log.Logger
+	GetDebugLog() *log.Logger
 	GetReadTimeout() time.Duration
 	GetReadHeaderTimeout() time.Duration
 	GetWriteTimeout() time.Duration
@@ -32,6 +33,7 @@ type Server interface {
 	SetCertFile(filename string)
 	SetKeyFile(filename string)
 	SetErrorLog(filename string) error
+	SetDebugLog(filename string) error
 	SetReadTimeout(timeout string) error
 	SetReadHeaderTimeout(timeout string) error
 	SetWriteTimeout(timeout string) error
@@ -60,6 +62,7 @@ type DefaultServer struct {
 	ModulesManager ModulesManager
 	ListenType     ListenType
 	ErrorLog       *log.Logger
+	DebugLog       *log.Logger
 	CertFile       string
 	KeyFile        string
 	Config         conf.Block
@@ -98,6 +101,10 @@ func (t *DefaultServer) GetKeyFile() string {
 
 func (t *DefaultServer) GetErrorLog() *log.Logger {
 	return t.ErrorLog
+}
+
+func (t *DefaultServer) GetDebugLog() *log.Logger {
+	return t.DebugLog
 }
 
 func (t *DefaultServer) GetReadTimeout() time.Duration {
@@ -166,6 +173,17 @@ func (t *DefaultServer) SetErrorLog(filename string) error {
 	}
 
 	t.ErrorLog = log.New(file, "", log.Ldate|log.Ltime|log.Lmicroseconds)
+
+	return nil
+}
+
+func (t *DefaultServer) SetDebugLog(filename string) error {
+	file, err := utils.OpenOrCreateFile(filename)
+	if err != nil {
+		return fmt.Errorf("can't open debug log file - %s", filename)
+	}
+
+	t.DebugLog = log.New(file, "", log.Ldate|log.Ltime|log.Lmicroseconds)
 
 	return nil
 }
