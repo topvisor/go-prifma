@@ -31,6 +31,7 @@ func (t *ResponseError) Write(rw http.ResponseWriter, _ HandleRequestResult) err
 		errStr = http.StatusText(t.Code)
 	}
 
+	rw.Header().Add("X-Prifma-Error", errStr)
 	http.Error(rw, errStr, t.Code)
 
 	return fmt.Errorf("%d %s", t.Code, errStr)

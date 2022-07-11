@@ -5,7 +5,7 @@
 Для сборки требуется golang https://golang.org/dl/
 
 ```shell script
-go get -u github.com/topvisor/go-prifma/cmd/prifma@v0.3.8
+go get -u github.com/topvisor/go-prifma/cmd/prifma@v0.3.28
 ```
 
 # run
