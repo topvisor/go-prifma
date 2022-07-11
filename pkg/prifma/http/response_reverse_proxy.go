@@ -80,15 +80,21 @@ func (t *ResponseReverseProxy) ErrorHandler(rw http.ResponseWriter, req *http.Re
 
 	switch err {
 	case context.DeadlineExceeded:
+		rw.Header().Add("X-Prifma-Error", http.StatusText(http.StatusGatewayTimeout))
 		http.Error(rw, http.StatusText(http.StatusGatewayTimeout), http.StatusGatewayTimeout)
 		t.ResponseCode = http.StatusGatewayTimeout
 		t.Error = fmt.Errorf("%d, %s", http.StatusGatewayTimeout, http.StatusText(http.StatusGatewayTimeout))
+
 	case context.Canceled:
+		rw.Header().Add("X-Prifma-Error", prifma.StatusTextClientClosedRequest)
 		http.Error(rw, prifma.StatusTextClientClosedRequest, prifma.StatusClientClosedRequest)
 		t.ResponseCode = prifma.StatusClientClosedRequest
+
 	default:
 		switch err := err.(type) {
 		case *net.OpError:
+			rw.Header().Add("X-Prifma-Error", err.Error())
+
 			if err.Op == "dial" {
 				http.Error(rw, err.Error(), http.StatusBadGateway)
 				t.ResponseCode = http.StatusBadGateway

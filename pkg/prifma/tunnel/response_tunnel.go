@@ -24,6 +24,7 @@ func NewResponseTunnel() *ResponseTunnel {
 func (t *ResponseTunnel) Write(rw http.ResponseWriter, result prifma.HandleRequestResult) error {
 	if result.GetProxy() != nil {
 		if err := t.ConnectToProxy(result); err != nil {
+			rw.Header().Add("X-Prifma-Error", err.Error())
 			http.Error(rw, err.Error(), http.StatusBadGateway)
 			t.ResponseCode = http.StatusBadGateway
 
@@ -33,6 +34,7 @@ func (t *ResponseTunnel) Write(rw http.ResponseWriter, result prifma.HandleReque
 
 	if t.DstConn == nil {
 		if err := t.ConnectToRequest(result); err != nil {
+			rw.Header().Add("X-Prifma-Error", err.Error())
 			http.Error(rw, err.Error(), http.StatusBadGateway)
 			t.ResponseCode = http.StatusBadGateway
 
@@ -46,6 +48,8 @@ func (t *ResponseTunnel) Write(rw http.ResponseWriter, result prifma.HandleReque
 	clientConn, _, err := rw.(http.Hijacker).Hijack()
 	if err != nil {
 		utils.CloseFile(t.DstConn)
+
+		rw.Header().Add("X-Prifma-Error", err.Error())
 		http.Error(rw, err.Error(), http.StatusInternalServerError)
 		t.ResponseCode = http.StatusInternalServerError
 

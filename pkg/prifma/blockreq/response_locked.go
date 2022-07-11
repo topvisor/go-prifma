@@ -13,6 +13,7 @@ func NewResponseLocked() *ResponseLocked {
 }
 
 func (t *ResponseLocked) Write(rw http.ResponseWriter, _ prifma.HandleRequestResult) error {
+	rw.Header().Add("X-Prifma-Error", http.StatusText(t.GetCode()))
 	http.Error(rw, http.StatusText(t.GetCode()), t.GetCode())
 
 	return nil
